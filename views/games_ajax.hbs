@@ -6,34 +6,32 @@
 
 <script type="text/javascript">
     window.onload = function () {
-        if ("{{apiFunction}}" == "/api/favorites")
-        {
+        if ("{{apiFunction}}" == "/api/favorites") {
             let fav = localStorage.getItem('favorites');            //localstorage è dentro window
             if (fav == null || fav == '{}') {
                 //fav = {};
                 $("#gamesTiles").append("<article class=\"style1\">\n" +
-                                    "                <h2>non ci sono preferiti</h2>\n" +
-                                    "        </article>\n");
+                    "                <h2>non ci sono preferiti</h2>\n" +
+                    "        </article>\n");
 
             }
-            else
-            {
+            else {
                 fav = JSON.parse(fav);
 
-            $.getJSON("{{{apiFunction}}}?id=" + Object.keys(fav).join(","))
+                $.getJSON("{{{apiFunction}}}?id=" + Object.keys(fav).join(","))
                     .done(function (games) {
                         for (gx in games) {
                             $("#gamesTiles").append("<article class=\"style1\">\n" +
-                                    "\t\t<span class=\"image\">\n" +
-                                    "\t\t\t<img src=\"" + games[gx].cover.url + "\" alt=\"\" />\n" +
-                                    "\t\t</span>\n" +
-                                    "            <a class=\"game\" href=\"/game/" + games[gx].id + "\">\n" +
-                                    "                <h2>" + games[gx].name + "</h2>\n" +
-                                    "                <div class=\"content\">\n" +
-                                    "                    <p>" + games[gx].genres + "</p>\n" +
-                                    "                </div>\n" +
-                                    "            </a>\n" +
-                                    "        </article>\n");
+                                "\t\t<span class=\"image\">\n" +
+                                "\t\t\t<img src=\"" + games[gx].cover.url + "\" alt=\"\" />\n" +
+                                "\t\t</span>\n" +
+                                "            <a class=\"game\" href=\"/game/" + games[gx].id + "\">\n" +
+                                "                <h2>" + games[gx].name + "</h2>\n" +
+                                "                <div class=\"content\">\n" +
+                                "                    <p>" + games[gx].genres + "</p>\n" +
+                                "                </div>\n" +
+                                "            </a>\n" +
+                                "        </article>\n");
                         }
                     })
                     .fail(function () {
@@ -43,24 +41,24 @@
         }
         else {
             $.getJSON("{{{apiFunction}}}")
-                    .done(function (games) {
-                        for (gx in games) {
-                            $("#gamesTiles").append("<article class=\"style1\">\n" +
-                                    "\t\t<span class=\"image\">\n" +
-                                    "\t\t\t<img src=\"" + games[gx].cover.url + "\" alt=\"\" />\n" +
-                                    "\t\t</span>\n" +
-                                    "            <a class=\"game\" href=\"/game/" + games[gx].id + "\">\n" +
-                                    "                <h2>" + games[gx].name + "</h2>\n" +
-                                    "                <div class=\"content\">\n" +
-                                    "                    <p>" + games[gx].genres + "</p>\n" +
-                                    "                </div>\n" +
-                                    "            </a>\n" +
-                                    "        </article>\n");
-                        }
-                    })
-                    .fail(function () {
-                        alert("Errore!")
-                    });
+                .done(function (games) {
+                    for (gx in games) {
+                        $("#gamesTiles").append("<article class=\"style1\">\n" +
+                            "\t\t<span class=\"image\">\n" +
+                            "\t\t\t<img src=\"" + games[gx].cover.url + "\" alt=\"\" />\n" +
+                            "\t\t</span>\n" +
+                            "            <a class=\"game\" href=\"/game/" + games[gx].id + "\">\n" +
+                            "                <h2>" + games[gx].name + "</h2>\n" +
+                            "                <div class=\"content\">\n" +
+                            "                    <p>" + games[gx].genres + "</p>\n" +
+                            "                </div>\n" +
+                            "            </a>\n" +
+                            "        </article>\n");
+                    }
+                })
+                .fail(function () {
+                    alert("Errore!")
+                });
         }
-}
+    }
 </script>
