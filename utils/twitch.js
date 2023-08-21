@@ -1,19 +1,11 @@
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
-const { response } = require('../app');
-const GRANT_TYPE = "client_credentials";
-const file_name = "../IGDB_credentials.json"; // Replace with the actual file path
-const file_path = path.join(__dirname, file_name);
-const encoding = 'utf8'; // Specify the file encoding (e.g., utf8)
 
+const GRANT_TYPE = "client_credentials";
 let access_token;
 let client_id;
 let credentials;
 
 async function auth_to_twitch() {
-  let json_data;
-  // lettura del file con le credenziali     
   
   igdb_client_id = process.env.IGDB_CLIENT_ID
   igdb_client_secret = process.env.IGDB_CLIENT_SECRET
@@ -40,15 +32,9 @@ async function auth_to_twitch() {
 
     credentials = { client_id: igdb_client_id, access_token: response.data.access_token };
 
-    /*
-    credentials = new Object();
-    credentials.client_id = json_data.client_id;
-    credentials.access_token = response.data.access_token;
-    */
-
   } catch (error) {
     // Handle any errors that occurred during the HTTP request
-    console.error('Error:', error.message);
+    console.error('Twitch error:', error.message);
   }
   return credentials;
 }
@@ -58,11 +44,3 @@ module.exports = {
   access_token: access_token,
   client_id: client_id
 }
-
-
-
-//exports.client_id = client_id;
-//exports.access_token = access_token;
-//exports.getClientID = getClientID;
-//exports.getAccessToken = getAccessToken;
-//exports.do_auth_to_twitch = do_auth_to_twitch;

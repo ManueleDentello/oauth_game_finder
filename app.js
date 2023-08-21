@@ -3,16 +3,8 @@ const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
-var igdb = require('./utils/igdb');
-const axios = require('axios');
-const https = require('https');
-const crypto = require('crypto');
+const session = require('express-session');
 require('dotenv').config();
-
-var twitch_client_id;
-var twitch_access_token;
-var OAuth_cliend_id;
-var OAuthClientSecret;
 
 const app = express();
 
@@ -25,8 +17,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(session({
+    secret: 'oauth-game-finder',
+    token: '',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false },
+  }))
 
-app.use("/oauth", require("./routes/auth"));
+app.use("/", require("./routes/auth"));
 app.use('/api', require('./routes/api'));
 
 app.get('/', async function (req, res, next) {
@@ -50,71 +49,33 @@ app.get('/search', async function (req, res, next) {
 });
 
 app.get('/game/:id', async function (req, res, next) {
-    // Finire chiamata ajax lato client
-    res.render('game', { apiFunction: '/api/game?id=' + req.query.id });
-});
-
-/*
-* endpoint per reindirizzare a registrazione utente
-*/
-app.get('/user/register', async function (req, res, next) {
-    try {
-        // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
-        const agent = new https.Agent({
-            rejectUnauthorized: false, // Consente certificati autofirmati
-        });
-
-        // Effettua la chiamata al server su localhost:443
-        const response = await axios.get('https://localhost:443/user/register', { httpsAgent: agent });
-        //console.log('Risposta dal server:', response.data);
-        res.send(response.data);
-
-        //qui devo intercettare la pressione del pulsante 
-
-
-        //response.data.client_id=OAuth_cliend_id;
-        //response.data.client_secret=OAuthClientSecret;
-    } catch (error) {
-        console.error('Errore durante la chiamata al server:', error);
-        res.status(500).send('Errore durante la chiamata al server');
+    // TODO: Finire chiamata ajax lato client
+    const access_token = req.session.token;
+    if(access_token){
+        res.render('game', { apiFunction: '/api/game?id=' + req.query.id });
+    } else {
+        //res.status(403).send('Access token not found in the session.');
+        res.redirect('/user/authorize');
     }
 });
 
-/*
-* endpoint submit form per registrazione utente
-*/
-app.post('/user/register', async function (req, res, next) {
-    try {
-
-        const requestData = req.body;
-        console.log(req.body);
-
-        // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
-        const agent = new https.Agent({
-            rejectUnauthorized: false, // Consente certificati autofirmati
-        });
-
-        // Effettua la chiamata al server su localhost:443
-        const response = await axios.post('https://localhost:443/user/register', req.body, { httpsAgent: agent });
-        console.log('Risposta dal server:', response.data);
-        //res.send(response.data);
-        res.redirect('/');
-        //res.render('message');
-
-    } catch (error) {
-        console.error('Errore durante la chiamata al server:', error);
-        res.status(500).send('Errore durante la chiamata al server');
-    }
+app.get('/login', async function (req, res, next) {
+    res.redirect('/user/authorize'); 
 });
 
+app.get('/secure', async function(req, res, next) {
+    // Simple secure page
+    const access_token = req.session.token;
+    if(access_token){
+        res.status(200).send("Sei in una pagina sicura con " + access_token);
+    } else {
+        res.status(403).send('Access token not found in the session.');
+    }
+});
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
     next(createError(404));
-});
-
-app.use(function (req, res, next) {
-    next(createError(403));
 });
 
 // error handler

@@ -32,7 +32,7 @@ async function getBest(client_id, access_token){
         .request(IGDB_GAMES); // execute the query and return a response object
 
     prepareTiles(games);        // prepara copertina e generi per ciascuna locandina
-    console.log(games.data);
+    //console.log(games.data);
     return games.data;
 }
 
