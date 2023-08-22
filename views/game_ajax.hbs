@@ -1,27 +1,85 @@
-<h1>{{title}}</h1>
+{{!-- <h1>{{title}}</h1> --}}
 
 {{!-- creo una sezione vuota che vado a riempire con le chiamate ajax stile prof --}}
-<section id="gamesTiles" class="tiles">
-</section>
+<div id="gameData">
+</div>
+
 
 <script type="text/javascript">
     window.onload = function () {
-        if ("{{apiFunction}}") { // perche id univoco preso da backend
+        //if ("{{apiFunction}}") { // perche id univoco preso da backend
             // qui metto logica per mostrare errore al client
 
-            $.getJSON("{{{apiFunction}}}").done(function (games) {
+            $.getJSON("{{{apiFunction}}}").done(function (game) {
                 // Qui prendo il risultato della chiamata api che resituisce 
                 // le informazioni di un gioco e le vado a inserire nella pagina html
                 // come e' stato fatto in games_ajax.bhs
+                $("#gameData").append("" + 
+                    "<button style=\"float:right; display:none;\" class=\"button icon solid fa-star\" id=\"favBut\" onclick=\"addFavorite(" + game.id +
+                        ", '" + game.name + "')\">NON PREFERITO</button>\n" +
+                    "<h1>" + game.name + "</h1>\n" +
+                    "{{!-- se esiste il video lo faccio vedere --}}\n"
+                );
+                if (game.videos != null) {
+                    $("#gameData").append("" +
+                        "<iframe style=\"width:100%; height: 60vw; max-height: 70vh;\" src=\"https://www.youtube.com/embed/" + game.videos +
+                            "?controls=0&autoplay=1&mute=1\" frameborder=\"0\" allow=\"accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
+                    );
+                }
+/*
+<div id="container">
+    <div id="sinistra">
+        <h2><i class="fas fa-file-alt"></i>DESCRIZIONE</h2>
+        <p>{{game.summary}}</p>
+    </div>
+    <div id="destra">
+        <h2><i class="fas fa-dice"></i>GENERE</h2>
+        {{#if game.genres}}
+            <p>{{game.genres}}</p>
+        {{else}}
+            <p>/</p>
+        {{/if}}
+
+        <h2><i class="fas fa-desktop"></i>PIATTAFORME</h2>
+        {{#if game.platforms}}
+            <p>{{game.platforms}}</p>
+        {{else}}
+            <p>/</p>
+        {{/if}}
+
+        <h2><i class="fas fa-calendar-times"></i>DATA DI USCITA</h2>
+        {{#if game.release_dates}}
+            <p>{{game.release_dates}}</p>
+        {{else}}
+            <p>/</p>
+        {{/if}}
+
+        <h2><i class="fas fa-code"></i>SVILUPPATORE</h2>
+        {{#if game.involved_companies}}
+            <p>{{game.involved_companies}}</p>
+        {{else}}
+            <p>/</p>
+        {{/if}}
+
+        <h2><i class="fas fa-network-wired"></i>SITO UFFICIALE</h2>
+        {{#if game.websites}}
+            <a href="{{game.websites}}">{{game.websites}}</a>
+        {{else}}
+            <p>/</p>
+        {{/if}}
+    </div>
+</div>
+*/           
+
 
                 // Ricordati di riumovere {{games.xxx}} lasciando xxx
             }).fail(function () {
                 alert("Errore nel cercare il gioco richiesto!");
             });
-        }
-        else {
+        //}
+       // else {
             // qui metto logica per mostrare errore al client
-            alert("Errore nella chiamata api");
-        }
+           // alert("Errore nella chiamata api");
+       // }
     }
 </script>

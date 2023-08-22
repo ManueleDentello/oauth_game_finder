@@ -8,10 +8,11 @@ require('dotenv').config();
 
 const app = express();
 
-// view engine setup
+// handlebars setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
 
+// express modules setup
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -25,9 +26,13 @@ app.use(session({
     cookie: { secure: false },
   }))
 
+//partition of routes based on pages and authentication in separated modules
 app.use("/", require("./routes/auth"));
 app.use('/api', require('./routes/api'));
 
+/*
+*   all express endpoints (found in the menu)
+*/
 app.get('/', async function (req, res, next) {
     res.render('games_ajax', { title: 'I migliori', apiFunction: '/api/best' });
 });
@@ -50,13 +55,14 @@ app.get('/search', async function (req, res, next) {
 
 app.get('/game/:id', async function (req, res, next) {
     // TODO: Finire chiamata ajax lato client
-    const access_token = req.session.token;
-    if(access_token){
-        res.render('game', { apiFunction: '/api/game?id=' + req.query.id });
-    } else {
+    //const access_token = req.session.token;
+    //if(access_token){
+        console.log("id: " + req.query.id);
+        res.render('game_ajax', { apiFunction: '/api/game/' + req.params.id });
+    //} else {
         //res.status(403).send('Access token not found in the session.');
-        res.redirect('/user/authorize');
-    }
+       // res.redirect('/user/authorize');
+   // }
 });
 
 app.get('/login', async function (req, res, next) {

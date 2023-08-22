@@ -39,6 +39,8 @@ async function auth_to_twitch() {
   return credentials;
 }
 
+// da aggiungere funzioen per refresh token twitch
+
 module.exports = {
   auth_to_twitch: auth_to_twitch,
   access_token: access_token,

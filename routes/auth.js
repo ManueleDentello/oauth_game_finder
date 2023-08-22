@@ -21,15 +21,57 @@ const config = new AuthorizationCode({
   },
 });
 
+/*
+* Client registration: server reroutes the request to OAuth server in order to get the form
+* no need to do it every time the app starts
+*/
 router.get('/client/register', async function (req, res, next) {
   // Dovrebbe essere tutto molto simile a /user/register, solo che il client_id e 
   // client_secret che ritorna vanno salvati in una variable globale come nel .env
   // importante ricordare che non e' necessario farlo ogni avvio dell'app
-  res.send('non ancora implementata');
+
+  try {
+    // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
+    const agent = new https.Agent({
+      rejectUnauthorized: false, // Consente certificati autofirmati
+    });
+
+    // Effettua la chiamata al server su localhost:443
+    const response = await axios.get('https://localhost:443/client/register', { httpsAgent: agent });
+    res.send(response.data);
+
+  } catch (error) {
+    console.error('Error on GET /client/register to OAuth server: ', error);
+    res.status(500).send('Error on GET /client/register to OAuth server');
+  }
+
 });
 
 /*
-* endpoint per reindirizzare a registrazione utente
+* Client registration: intercepts compiled form and send data to OAuth server
+*/
+router.post('/client/register', async function (req, res, next) {
+  try {
+    // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
+    const agent = new https.Agent({
+      rejectUnauthorized: false, // Consente certificati autofirmati
+    });
+
+    // Effettua la chiamata al server su localhost:443
+    const response = await axios.post('https://localhost:443/client/register', req.body, { httpsAgent: agent });  // req.body contains the compiled form
+    console.log('Risposta dal server:', response.data);
+    process.env.OAUTH_CLIENT_ID_2 = response.data.clientId;
+    process.env.OAUTH_CLIENT_SECRET_2 = response.data.clientSecret;
+    res.redirect('/');
+
+  } catch (error) {
+    console.error('Error on POST /client/register to OAuth server:', error);
+    res.status(500).send('Error on POST /client/register to OAuth server');
+  }
+});
+
+/*
+* User registration: server reroutes the request to OAuth server in order to get the form
 */
 router.get('/user/register', async function (req, res, next) {
   try {
@@ -49,7 +91,7 @@ router.get('/user/register', async function (req, res, next) {
 });
 
 /*
-* endpoint submit form per registrazione utente
+* User registration: intercepts compiled form and send data to OAuth server
 */
 router.post('/user/register', async function (req, res, next) {
   try {

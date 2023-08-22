@@ -277,6 +277,9 @@ async function getCover(id){
 }
 
 // FUNZIONI DI UTILITY
+/*
+*   questa forse serve a ridurre il numero di query fatte. Tiro giù un po' di generi in un colpo solo anziché fare le chiamate per ogni singolo gioco
+*/
 async function loadGenresCache(){
     const genres = await apicalypse({
         queryMethod: 'body',
