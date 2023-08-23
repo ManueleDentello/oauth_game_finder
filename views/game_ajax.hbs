@@ -5,6 +5,23 @@
 </div>
 
 <script type="text/javascript">
+
+    function addFavorite(id, name){
+        let fav = localStorage.getItem('favorites');
+        if(fav == null)
+            fav = {};
+        else
+            fav = JSON.parse(fav);
+        if(id in fav){
+            delete fav[id];
+            $("#favBut").text("Non preferito").removeClass("primary");
+        }else{
+            fav[id] = name;
+            $("#favBut").text("PREFERITO").addClass("primary");
+        }
+        localStorage.setItem('favorites', JSON.stringify(fav));
+    }
+
     window.onload = function () {
         //if ("{{apiFunction}}") { // perche id univoco preso da backend
             // qui metto logica per mostrare errore al client
@@ -19,7 +36,7 @@
                 // using single quotes two avoid escaping the double quotes of HTML, also using \ at the end of the row in order to reduce the number of single quotes necessary to create a multi-row string
                 gameHTML = gameHTML + 
                     '<button style="float:right; display:none;" class="button icon solid fa-star" id="favBut" onclick="addFavorite(' + game.id + ', \'' + game.name + '\')">NON PREFERITO</button>\n\
-                    <h1 style="text-align: center;">' + game.name + '</h1>\n\
+                    <h1>' + game.name + '</h1>\n\
                     {{!-- se esiste il video lo faccio vedere --}}\n';
                 
                 if (game.videos) {
@@ -72,6 +89,16 @@
                 
                 // finally, append the created HTML in the initial div
                 $("#gameData").append(gameHTML);
+
+                // favorite button logic
+                let fav = localStorage.getItem('favorites');
+                if(fav == null)
+                    fav = {};
+                else
+                    fav = JSON.parse(fav);
+                if (game.id in fav)
+                    $("#favBut").text("PREFERITO").addClass("primary");
+                $("#favBut").show();
             
             }).fail(function () {
                 alert("Error on the query {{apiFunction}}");
@@ -80,6 +107,6 @@
        // else {
             // qui metto logica per mostrare errore al client
            // alert("Errore nella chiamata api");
-       // }
+       // }  
     }
 </script>
