@@ -1,4 +1,4 @@
-const path = require('path') // has path and __dirname
+const db = require('../utils/mongodb');
 const express = require('express')
 const igdb = require('../utils/igdb');
 const authentication = require('../utils/twitch.js');
@@ -40,6 +40,17 @@ router.get('/hype', async function(req, res, next) {
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(games));
 });
+
+router.get('favotites/save', async function(req, res, next) {
+    let client_id = req.body.client_id;
+    let game_id = req.body.game_id;
+    let x = db.saveFavorite(client_id, game_id);
+    res.send(x);
+});
+
+// router.get('favotites/delete', async function(req, res, next) {});
+
+// router.get('favotites/get', async function(req, res, next) {});
 
 router.get('/favorites', async function(req, res, next) {
     console.log("id dei giochi preferiti: " + req.query.id);

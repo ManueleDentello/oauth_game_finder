@@ -21,6 +21,7 @@ const config = new AuthorizationCode({
   },
 });
 
+
 /*
 * NOT PART OF OAUTH FLOW (JUST FOR DEMO)
 * Client registration: server reroutes the request to OAuth server in order to get the form
@@ -144,7 +145,10 @@ router.get('/callback', async (req, res) => {
 
     console.log('The resulting token: ', accessToken.token);
 
+    console.log(accessToken);
     req.session.token = accessToken.token.access_token; // store the token in the browser session
+    // salvo tutto quello che ritorna il server oauth nella session
+    req.session.oauth_token = accessToken.token // store the token in the browser session
     console.log("Ottenuto access token: " + accessToken.token.access_token);
     console.log(req.session)
 
@@ -162,14 +166,16 @@ router.get('/callback', async (req, res) => {
 router.get('/refresh-token', async (req, res) => {
   // not yet implemented correctly
   try {
-    const refreshToken = req.session.refreshToken;
+    const refreshToken = req.session.oauth_token.refresh_token;
+    console.log(refreshToken)
 
     const refreshParams = {
       refresh_token: refreshToken,
     };
 
-    const result = await oauth2.accessToken.create({ refresh_token: refreshToken }).refresh();
+    const result = await config.accessToken.create({ refresh_token: refreshToken }).refresh();
 
+    console.log(result)
     // Update the access token in the session
     //req.session.accessToken = result.token.access_token;
 

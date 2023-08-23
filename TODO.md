@@ -13,6 +13,13 @@
 - [ ] creare il server web con comunicazione https (funziona quando faccio debug?)
 - [ ] capire cosa bisogna fare con il flag secure:true del cookie
 
+### DB
+
+- [] Testare collegamento db
+- [] Populare funzioni in utils/mongodb per salvare, rimuovere e vedere preferiti
+- [] Populare api per preferiti in routes/api
+- [] Aggiornare view per bottone preferito
+
 ### In Progress
 
 - [ ] Work on Github Repo [JIRA-345]  
