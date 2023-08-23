@@ -57,7 +57,6 @@ app.get('/game/:id', async function (req, res, next) {
     // TODO: Finire chiamata ajax lato client
     //const access_token = req.session.token;
     //if(access_token){
-        console.log("id: " + req.query.id);
         res.render('game_ajax', { apiFunction: '/api/game/' + req.params.id });
     //} else {
         //res.status(403).send('Access token not found in the session.');

@@ -22,6 +22,7 @@ const config = new AuthorizationCode({
 });
 
 /*
+* NOT PART OF OAUTH FLOW (JUST FOR DEMO)
 * Client registration: server reroutes the request to OAuth server in order to get the form
 * no need to do it every time the app starts
 */
@@ -48,6 +49,7 @@ router.get('/client/register', async function (req, res, next) {
 });
 
 /*
+* NOT PART OF OAUTH FLOW (JUST FOR DEMO)
 * Client registration: intercepts compiled form and send data to OAuth server
 */
 router.post('/client/register', async function (req, res, next) {
@@ -59,9 +61,7 @@ router.post('/client/register', async function (req, res, next) {
 
     // Effettua la chiamata al server su localhost:443
     const response = await axios.post('https://localhost:443/client/register', req.body, { httpsAgent: agent });  // req.body contains the compiled form
-    console.log('Risposta dal server:', response.data);
-    process.env.OAUTH_CLIENT_ID_2 = response.data.clientId;
-    process.env.OAUTH_CLIENT_SECRET_2 = response.data.clientSecret;
+    console.log('Risposta dal server:', response.data); // just to show that oauth server sends client id and client secret
     res.redirect('/');
 
   } catch (error) {
@@ -71,6 +71,7 @@ router.post('/client/register', async function (req, res, next) {
 });
 
 /*
+* NOT PART OF OAUTH FLOW (JUST FOR DEMO)
 * User registration: server reroutes the request to OAuth server in order to get the form
 */
 router.get('/user/register', async function (req, res, next) {
@@ -91,6 +92,7 @@ router.get('/user/register', async function (req, res, next) {
 });
 
 /*
+* NOT PART OF OAUTH FLOW (JUST FOR DEMO)
 * User registration: intercepts compiled form and send data to OAuth server
 */
 router.post('/user/register', async function (req, res, next) {
@@ -106,7 +108,7 @@ router.post('/user/register', async function (req, res, next) {
     // Effettua la chiamata al server su localhost:443
     const response = await axios.post('https://localhost:443/user/register', req.body, { httpsAgent: agent });
     console.log('Risposta dal server:', response.data);
-    res.redirect('/user/authorize');
+    res.redirect('/');
 
   } catch (error) {
     console.error('Errore durante la chiamata POST al server per la registrazione utente:', error);
@@ -114,6 +116,9 @@ router.post('/user/register', async function (req, res, next) {
   }
 });
 
+/*
+* request authorization code to oauth server
+*/
 router.get('/user/authorize', async(req, res) => {
   const authorizationUri = config.authorizeURL({
     redirect_uri: callbackUrl, 
@@ -124,8 +129,11 @@ router.get('/user/authorize', async(req, res) => {
   res.redirect(authorizationUri);
 })
 
+/*
+* get the authorization code back, request token to oauth server and store it
+*/
 router.get('/callback', async (req, res) => {
-  const { code } = req.query;
+  const { code } = req.query; // create a variable that stores the value of "code" query parameter
   const options = {
     code,
     redirect_uri: callbackUrl
@@ -136,11 +144,11 @@ router.get('/callback', async (req, res) => {
 
     console.log('The resulting token: ', accessToken.token);
 
-    req.session.token = accessToken.token.access_token;
+    req.session.token = accessToken.token.access_token; // store the token in the browser session
     console.log("Ottenuto access token: " + accessToken.token.access_token);
     console.log(req.session)
 
-    return res.redirect('/');
+    return res.redirect('/'); // redirect to home page
 
   } catch (error) {
     console.error('Access Token Error', error.message);
@@ -148,6 +156,9 @@ router.get('/callback', async (req, res) => {
   }
 });
 
+/*
+* request a new token to oauth server when the old one expires
+*/
 router.get('/refresh-token', async (req, res) => {
   // not yet implemented correctly
   try {

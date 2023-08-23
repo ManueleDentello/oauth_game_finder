@@ -4,7 +4,6 @@
 <div id="gameData">
 </div>
 
-
 <script type="text/javascript">
     window.onload = function () {
         //if ("{{apiFunction}}") { // perche id univoco preso da backend
@@ -14,67 +13,68 @@
                 // Qui prendo il risultato della chiamata api che resituisce 
                 // le informazioni di un gioco e le vado a inserire nella pagina html
                 // come e' stato fatto in games_ajax.bhs
-                $("#gameData").append("" + 
-                    "<button style=\"float:right; display:none;\" class=\"button icon solid fa-star\" id=\"favBut\" onclick=\"addFavorite(" + game.id +
-                        ", '" + game.name + "')\">NON PREFERITO</button>\n" +
-                    "<h1>" + game.name + "</h1>\n" +
-                    "{{!-- se esiste il video lo faccio vedere --}}\n"
-                );
-                if (game.videos != null) {
-                    $("#gameData").append("" +
-                        "<iframe style=\"width:100%; height: 60vw; max-height: 70vh;\" src=\"https://www.youtube.com/embed/" + game.videos +
-                            "?controls=0&autoplay=1&mute=1\" frameborder=\"0\" allow=\"accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture\" allowfullscreen></iframe>\n"
-                    );
+
+                // getting all HTML and data into one variable, then use the jquery append function
+                var gameHTML = '';
+                // using single quotes two avoid escaping the double quotes of HTML, also using \ at the end of the row in order to reduce the number of single quotes necessary to create a multi-row string
+                gameHTML = gameHTML + 
+                    '<button style="float:right; display:none;" class="button icon solid fa-star" id="favBut" onclick="addFavorite(' + game.id + ', \'' + game.name + '\')">NON PREFERITO</button>\n\
+                    <h1 style="text-align: center;">' + game.name + '</h1>\n\
+                    {{!-- se esiste il video lo faccio vedere --}}\n';
+                
+                if (game.videos) {
+                    gameHTML = gameHTML + 
+                        '<iframe style="width:100%; height: 60vw; max-height: 70vh;" src="https://www.youtube.com/embed/' + game.videos +
+                        '?controls=0&autoplay=1&mute=1" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n'
+                    ;
                 }
-/*
-<div id="container">
-    <div id="sinistra">
-        <h2><i class="fas fa-file-alt"></i>DESCRIZIONE</h2>
-        <p>{{game.summary}}</p>
-    </div>
-    <div id="destra">
-        <h2><i class="fas fa-dice"></i>GENERE</h2>
-        {{#if game.genres}}
-            <p>{{game.genres}}</p>
-        {{else}}
-            <p>/</p>
-        {{/if}}
+               
+                gameHTML = gameHTML +
+                    '<div id="container">\n\
+                        <div id="sinistra">\n\
+                            <h2><i class="fas fa-file-alt"></i>DESCRIZIONE</h2>\n\
+                            <p>' + game.summary + '</p>\n\
+                        </div>\n\
+                        <div id="destra">\n\
+                            <h2><i class="fas fa-dice"></i>GENERE</h2>\n'
+                ;
+                
+                        if (game.genres)
+                            gameHTML = gameHTML + '<p>' + game.genres + '</p>\n';
+                        //else 
+                        // gameHTML = gameHTML + '<p>/</p>';        
+                        gameHTML = gameHTML + '<h2><i class="fas fa-desktop"></i>PIATTAFORME</h2>\n';
+                
+                        if (game.platforms)
+                            gameHTML = gameHTML + '<p>' + game.platforms + '</p>\n';
+                        // else p vuoto
+                
+                        gameHTML = gameHTML + '<h2><i class="fas fa-calendar-times"></i>DATA DI USCITA</h2>\n';
+                        if (game.release_dates)
+                            gameHTML = gameHTML + '<p>' + game.release_dates + '</p>\n';
+                        //else 
+                        // gameHTML = gameHTML + '<p>/</p>'; 
 
-        <h2><i class="fas fa-desktop"></i>PIATTAFORME</h2>
-        {{#if game.platforms}}
-            <p>{{game.platforms}}</p>
-        {{else}}
-            <p>/</p>
-        {{/if}}
+                        gameHTML = gameHTML + '<h2><i class="fas fa-code"></i>SVILUPPATORE</h2>\n';
+                        if (game.involved_companies)
+                            gameHTML = gameHTML + '<p>' + game.involved_companies + '</p>\n';
+                        //else 
+                            // gameHTML = gameHTML + '<p>/</p>';
 
-        <h2><i class="fas fa-calendar-times"></i>DATA DI USCITA</h2>
-        {{#if game.release_dates}}
-            <p>{{game.release_dates}}</p>
-        {{else}}
-            <p>/</p>
-        {{/if}}
-
-        <h2><i class="fas fa-code"></i>SVILUPPATORE</h2>
-        {{#if game.involved_companies}}
-            <p>{{game.involved_companies}}</p>
-        {{else}}
-            <p>/</p>
-        {{/if}}
-
-        <h2><i class="fas fa-network-wired"></i>SITO UFFICIALE</h2>
-        {{#if game.websites}}
-            <a href="{{game.websites}}">{{game.websites}}</a>
-        {{else}}
-            <p>/</p>
-        {{/if}}
-    </div>
-</div>
-*/           
-
-
-                // Ricordati di riumovere {{games.xxx}} lasciando xxx
+                        gameHTML = gameHTML + '<h2><i class="fas fa-network-wired"></i>SITO UFFICIALE</h2>\n';
+                        if (game.websites)
+                            gameHTML = gameHTML + '<a href="' + game.websites + '">' + game.websites + '</a>\n';
+                        //else 
+                            // gameHTML = gameHTML + '<p>/</p>';
+                        gameHTML= gameHTML + 
+                        '</div>\n\
+                    </div>\n';
+                
+                // finally, append the created HTML in the initial div
+                $("#gameData").append(gameHTML);
+            
             }).fail(function () {
-                alert("Errore nel cercare il gioco richiesto!");
+                alert("Error on the query {{apiFunction}}");
             });
         //}
        // else {
