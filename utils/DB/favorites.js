@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const favoriteSchema = new mongoose.Schema({
-    client_id:{
+    username:{
       type: String,
       unique: true,
       required: true,
@@ -13,4 +13,4 @@ const favoriteSchema = new mongoose.Schema({
     } // Hash password of the user;
 });
 
-mongoose.model('favorite', userSchema);
+mongoose.model('favorites', favoriteSchema);
