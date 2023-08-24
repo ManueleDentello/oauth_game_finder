@@ -54,7 +54,6 @@ app.get('/search', async function (req, res, next) {
 });
 
 app.get('/game/:id', async function (req, res, next) {
-    // TODO: Finire chiamata ajax lato client
     //const access_token = req.session.token;
     //if(access_token){
         res.render('game_ajax', { apiFunction: '/api/game/' + req.params.id });
