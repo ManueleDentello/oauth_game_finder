@@ -6,8 +6,11 @@
 
 <script type="text/javascript">
     window.onload = function () {
-        // if page called is favorites, then retrieve favorites from cookies
-        if ("{{apiFunction}}" == "/api/favorites") {          
+        if ("{{apiFunction}}" == "/api/favorites") {  
+            // if page called is favorites, then retrieve favorites from cookies 
+
+            // STA PARTE DOVREI TOGLIERLA E FARE DIRETTAMENTE LE CHIAMATE USANDO L'API
+
             let fav = localStorage.getItem('favorites');            // window.localStorage contains cookies
             // if cookies are undefined or void, notify user
             if (fav == null || fav == '{}') {
@@ -24,6 +27,10 @@
                 // use of jquery to make HTTP requests to obtain data from external database
                 $.getJSON("{{{apiFunction}}}?id=" + Object.keys(fav).join(","))     // triple stash (3 braces) is for HTML escaping
                     .done(function (games) {
+
+                        // QUI AGGIUNGERE LA PARTE DI GENERAZIONE PAGINA QUI SOPRA IN CASO NON CI SIANO PREFERITI
+
+
                         for (gx in games) {
                             $("#gamesTiles").append("" +
                                 "<article class=\"style1\">\n" +
@@ -45,9 +52,8 @@
                     });
             }
         }
-
-        // if it's not favorite page, the render is the same for all the other pages, just execute the query and append each game tile to the section object
         else {
+            // if it's not favorite page, the render is the same for all the other pages, just execute the query and append each game tile to the section object
             $.getJSON("{{{apiFunction}}}")
                 .done(function (games) {
                     for (gx in games) {
