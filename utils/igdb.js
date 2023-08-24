@@ -90,7 +90,7 @@ async function getFavorites(id, client_id, access_token){
         }
     })
         .fields('name,genres.name,cover.url')
-        .where('id = (' + id + ')')
+        .where('id = (' + id + ')') // multiple ids may be present
         .request(IGDB_GAMES); // execute the query and return a response object
     console.log(games.data);
     prepareTiles(games); 
