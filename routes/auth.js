@@ -135,10 +135,14 @@ router.get('/user/authorize', async(req, res) => {
 */
 router.get('/callback', async (req, res) => {
   const { code } = req.query; // create a variable that stores the value of "code" query parameter
+  const { user_name } = req.query;
   const options = {
     code,
     redirect_uri: callbackUrl
   };
+
+  //  store the username into the session
+  req.session.user_name = user_name;
 
   try {
     const accessToken = await config.getToken(options);
