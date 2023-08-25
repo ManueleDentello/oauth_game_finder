@@ -4,6 +4,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const session = require('express-session');
+const twitch = require('./utils/twitch.js');
 require('dotenv').config();
 
 const app = express();
@@ -23,10 +24,24 @@ app.use(session({
     token: '',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false },
+    cookie: { secure: false },  // to be modified
   }))
 
-//partition of routes based on pages and authentication in separated modules
+/*
+ proposal on how to handle igdb connection at the startup of the server and to store in the session client_id and client_secret
+app.use(async function (req, res, next) {
+    if (!req.session.twitch_client_id || !req.session.twitch_client_secret) {
+        const credentials = await twitch.auth_to_twitch();
+        req.session.twitch_client_id = credentials.client_id;
+        req.session.twitch_client_secret = credentials.client_secret;
+    }
+    // testare per vedere se prende il valore correttamente e per vedere quante volte gira
+    console.log('Twitch client id: ' + req.session.twitch_client_id + ', Twitch client secret: ' + req.session.twitch_client_secret);
+    next();
+  });
+*/
+
+//partition of routes in separated modules based on authentication endpoints and api endpoints (mongodb or igdb)
 app.use("/", require("./routes/auth"));
 app.use('/api', require('./routes/api'));
 
@@ -34,41 +49,48 @@ app.use('/api', require('./routes/api'));
 *   all express endpoints (found in the menu)
 */
 app.get('/', async function (req, res, next) {
-    res.render('games_ajax', { title: 'I migliori', apiFunction: '/api/best' });
+    user = req.session.user_name;
+    res.render('games_ajax', { title: 'I migliori', apiFunction: '/api/best', user: user });
 });
 
 app.get('/popular', async function (req, res, next) {
-    res.render('games_ajax', { title: 'I più popolari', apiFunction: '/api/popular' });
+    user = req.session.user_name;
+    res.render('games_ajax', { title: 'I più popolari', apiFunction: '/api/popular', user: user });
 });
 
 app.get('/hype', async function (req, res, next) {
-    res.render('games_ajax', { title: 'I più attesi', apiFunction: '/api/hype' });
+    user = req.session.user_name;
+    res.render('games_ajax', { title: 'I più attesi', apiFunction: '/api/hype', user: user });
 });
 
 app.get('/favorites', async function (req, res, next) {
-    res.render('games_ajax', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites' });
+    user = req.session.user_name;
+    const access_token = req.session.token;
+    if (access_token) {
+        res.render('games_ajax', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites', user: user });
+    } else {
+        res.status(403).send('Access token not found in the session.');
+        res.redirect('/user/authorize');
+    }
 });
 
 app.get('/search', async function (req, res, next) {
-    res.render('games_ajax', { title: 'Risultati ricerca per: "' + req.query.txtRicerca + '"', apiFunction: '/api/search?txtRicerca=' + req.query.txtRicerca });
+    user = req.session.user_name;
+    res.render('games_ajax', { title: 'Risultati ricerca per: "' + req.query.txtRicerca + '"', apiFunction: '/api/search?txtRicerca=' + req.query.txtRicerca, user: user });
 });
 
 app.get('/game/:id', async function (req, res, next) {
-    //const access_token = req.session.token;
-    //if(access_token){
-        res.render('game_ajax', { apiFunction: '/api/game/' + req.params.id, dbGet: '/db/getFavorite/' + req.params.id, dbSave: '/db/saveFavorite' + req.params.id, dbDelete: '/db/deleteFavorite' + req.params.id });
-    //} else {
-        //res.status(403).send('Access token not found in the session.');
-       // res.redirect('/user/authorize');
-   // }
+    user = req.session.user_name;
+    res.render('game_ajax', { apiFunction: '/api/game/' + req.params.id, user: user, dbGet: '/db/getFavorite/' + req.params.id, dbSave: '/db/saveFavorite' + req.params.id, dbDelete: '/db/deleteFavorite' + req.params.id });
 });
 
 app.get('/login', async function (req, res, next) {
     res.redirect('/user/authorize'); 
 });
 
+    //  example of a secure page
 app.get('/secure', async function(req, res, next) {
-    // Simple secure page
+    user = req.session.user_name;
     const access_token = req.session.token;
     if(access_token){
         res.status(200).send("Sei in una pagina sicura con " + access_token);
