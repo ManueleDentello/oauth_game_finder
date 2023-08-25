@@ -23,8 +23,10 @@ async function get_twitch_stuff() {
 
 get_twitch_stuff();
 
-// ATTENTION: this are api endpoints, not page endpoints. They are called by handlebars views
-
+/*
+ *  ATTENTION: these are api endpoints, not web endpoints. They are called by handlebars views
+ *  flow: web link -> web endpoint in app.js -> games_ajax or game_ajax view -> api endpoint (igdb or db) -> query igdb -> HTML render
+ */
 router.get('/best', async function(req, res, next) {
   let games = await igdb.getBest(twitch_client_id, twitch_access_token);
   res.setHeader("Content-Type", "application/json");
@@ -50,9 +52,9 @@ router.get('/favorites', async function(req, res, next) {
     let favoriteString = favorites.join(,);
     */
 
-    // flusso: endpoint preferiti -> app.js -> games_ajax.hbs -> questo endpoint -> query igdb -> done
+    
 
-    console.log("favorite games ids: " + req.query.id);
+    //console.log("favorite games ids: " + req.query.id);
     let favorites = await igdb.getFavorites(req.query.id/*favoriteString*/, twitch_client_id, twitch_access_token);  // req.query.id contains all favorite games ids
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(favorites));
@@ -70,18 +72,32 @@ router.get('/game/:id', async function(req, res, next) {
     res.end(JSON.stringify(game));
 });
 
-/*
-
-// router.get('favotites/delete', async function(req, res, next) {});
-
-// router.get('favotites/get', async function(req, res, next) {});
-
-router.get('favorites/save', async function(req, res, next) {
-    let client_id = req.body.client_id;
-    let game_id = req.body.game_id;
-    let x = db.saveFavorite(client_id, game_id);
-    res.send(x);
+//  MongoDB endpoints
+router.get('db/deleteFavorite/:id', async function(req, res, next) {
+    // prendo lo user id dalla session
+    // user_name o user_id = session.qualcosa
+    let game_id = req.params.id;
+    var result = db.deleteFavorite(user_name, game_id);
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify(result));
 });
-*/
+
+router.get('db/saveFavorite/:id', async function(req, res, next) {
+    // prendo lo user id dalla session
+    // user_name o user_id = session.qualcosa
+    let game_id = req.params.id;
+    var result = db.saveFavorite(user_name, game_id);
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify(result));
+});
+
+router.get('db/getFavorite/:id', async function(req, res, next) {
+    // prendo lo user id dalla session
+    // user_name o user_id = session.qualcosa
+    let game_id = req.params.id;
+    var result = db.getFavorite(user_name, game_id);
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify(result));
+});
 
 module.exports = router
