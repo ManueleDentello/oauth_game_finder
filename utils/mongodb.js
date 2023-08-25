@@ -18,9 +18,11 @@ module.exports = {
       try {
          let newFavorite = await favorite.save();
          console.log('Document saved:', newFavorite);
+         return true;
       }
       catch (error) {
          console.error('Error during save:', error);
+         return false;
       }
    },
 
@@ -48,9 +50,11 @@ module.exports = {
       try {
          const result = await favorite.deleteOne({ user_name: user_name, game_id: game_id });
          if (result.deletedCount > 0) {
-           console.log(`Document with user_name ${user_name} and game_id ${game_id} has been cancelled from the favorite games collection.`);
+           console.log('Document with user_name ${user_name} and game_id ${game_id} has been cancelled from the favorite games collection.');
+           return true;
          } else {
-           console.log(`No document with user_name ${user_name} and game_id ${game_id} was found in the favorite games collection.`);
+           console.log('No document with user_name ${user_name} and game_id ${game_id} was found in the favorite games collection.');
+           return false;
          }
        } catch (err) {
          console.error('Error during deleteFavorite', err);
@@ -64,10 +68,11 @@ module.exports = {
          const favorites = await query.find({ user_name: user_name });
          if (favorites.length > 0) {
            const result = favorites.map(game => game.game_id);
-           console.log(`Tutti i game_id per il user_name ${user_name}:`, result);
+           console.log('Favorite game found for user_name ${user_name}:', result);
            return result;
          } else {
-           console.log(`No favorite games found for the user_name ${user_name}.`);
+           console.log('No favorite games found for the user_name ${user_name}.');
+           return 0;
          }
        } catch (err) {
          console.error('Error during getFavorites', err);
