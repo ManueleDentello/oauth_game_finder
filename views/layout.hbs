@@ -36,16 +36,16 @@
 
 				<!-- Menu -->
 					<nav id="menu">
-						<h1>Menu</h1>
+						<h1>{{#if user}} {{user}} {{else}} Ospite {{/if}}</h1>	
 						<ul class="fa-ul">
 							<li><a href="/"><i class="fas fa-medal"></i>&nbspI migliori</a></li>
                             <li><a href="/popular"><i class="fas fa-fire"></i>&nbsp&nbspI più popolari</a></li>
                             <li><a href="/hype"><i class="fas fa-clock"></i>&nbspI più attesi</a></li>
                             <li><a href="/favorites"><i class="fas fa-star"></i>&nbspI tuoi preferiti</a></li>
-							<li><a href="/client/register"><i class="fas fa-star"></i>&nbspI Registrazione client</a></li>
-							<li><a href="/user/register"><i class="fas fa-star"></i>&nbspI Registrazione utente</a></li>
-							<li><a href="/user/authorize"><i class="fas fa-star"></i>&nbspI Login</a></li>
-							<li><a href="/logout"><i class="fas fa-star"></i>&nbspI Logout</a></li>
+							<li><a href="/client/register"><i class="fa-brands fa-app-store"></i>&nbspI Registrazione client</a></li>
+							<li><a href="/user/register"><i class="fa-solid fa-right-to-bracket"></i>&nbspI Registrazione utente</a></li>
+							<li><a href="/user/authorize"><i class="fa-solid fa-user"></i>&nbspI Login</a></li>
+							<li><a href="/logout"><i class="fa-solid fa-right-from-bracket"></i></i>&nbspI Logout</a></li>
                             <li>
                                 <form action="/search">
                                     <!-- <i class="fas fa-search" style="display: inline; float: left; vertical-align: middle; width: 20%"></i> -->
