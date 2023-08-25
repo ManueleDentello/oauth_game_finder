@@ -56,7 +56,7 @@ app.get('/search', async function (req, res, next) {
 app.get('/game/:id', async function (req, res, next) {
     //const access_token = req.session.token;
     //if(access_token){
-        res.render('game_ajax', { apiFunction: '/api/game/' + req.params.id });
+        res.render('game_ajax', { apiFunction: '/api/game/' + req.params.id, dbGet: '/db/getFavorite/' + req.params.id, dbSave: '/db/saveFavorite' + req.params.id, dbDelete: '/db/deleteFavorite' + req.params.id });
     //} else {
         //res.status(403).send('Access token not found in the session.');
        // res.redirect('/user/authorize');
