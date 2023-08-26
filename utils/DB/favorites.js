@@ -8,7 +8,7 @@ const favoriteSchema = new mongoose.Schema({
       lowercase: true
     }, // Unique string representing the user
     game_id:{
-      type: Integer,
+      type: Number,
       required: true
     } // Hash password of the user;
 });
