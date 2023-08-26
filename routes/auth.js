@@ -135,14 +135,10 @@ router.get('/user/authorize', async(req, res) => {
 */
 router.get('/callback', async (req, res) => {
   const { code } = req.query; // create a variable that stores the value of "code" query parameter
-  const { user_name } = req.query;
   const options = {
     code,
     redirect_uri: callbackUrl
   };
-
-  //  store the username into the session
-  req.session.user_name = user_name;
 
   try {
     const accessToken = await config.getToken(options);
@@ -156,11 +152,34 @@ router.get('/callback', async (req, res) => {
     console.log("Ottenuto access token: " + accessToken.token.access_token);
     console.log(req.session)
 
-    return res.redirect('/'); // redirect to home page
+    return res.redirect('/'); // redirect to home page --> da cambiare verso /username
 
   } catch (error) {
     console.error('Access Token Error', error.message);
     return res.status(500).json('Authentication failed');
+  }
+});
+
+router.get('/username', async (req, res) => {
+  try {
+    // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
+    const agent = new https.Agent({
+      rejectUnauthorized: false, // Consente certificati autofirmati
+    });
+
+    const headers = {
+      'Authorization': 'Bearer ' + req.session.oauth_token
+    };
+
+    // Effettua la chiamata al server su localhost:443
+    const response = await axios.post('https://localhost:443/secure', headers, { httpsAgent: agent });
+    console.log('Risposta dal server:', response.data);
+    req.session.userName = response.data;
+
+    res.redirect('/');
+  } catch (error) {
+    console.error('Errore durante la chiamata POST al server per l\'accesso alla risorsa protetta (username):', error);
+    res.status(500).send('Errore durante la chiamata al server oauth2');
   }
 });
 
