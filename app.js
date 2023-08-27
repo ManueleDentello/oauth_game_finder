@@ -2,9 +2,8 @@ const createError = require('http-errors');
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
-const logger = require('morgan');
+const logger = require('./utils/logger');
 const session = require('express-session');
-const twitch = require('./utils/twitch.js');
 require('dotenv').config();
 
 const app = express();
@@ -14,7 +13,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
 
 // express middlewares setup
-app.use(logger('dev'));
+app.use(require('./utils/morgan')); // Usa morgan per mostrare i log delle richieste 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -50,22 +49,22 @@ app.use('/api', require('./routes/api'));
 */
 app.get('/', async function (req, res, next) {
     user = req.session.userName;
-    console.log(user);
+    logger.info(user);
     res.render('games_ajax', { title: 'I migliori', apiFunction: '/api/best', user: user });
 });
 
 app.get('/popular', async function (req, res, next) {
-    user = req.session.user_name;
+    user = req.session.userName;
     res.render('games_ajax', { title: 'I più popolari', apiFunction: '/api/popular', user: user });
 });
 
 app.get('/hype', async function (req, res, next) {
-    user = req.session.user_name;
+    user = req.session.userName;
     res.render('games_ajax', { title: 'I più attesi', apiFunction: '/api/hype', user: user });
 });
 
 app.get('/favorites', async function (req, res, next) {
-    user = req.session.user_name;
+    user = req.session.userName;
     const access_token = req.session.token;
     if (access_token) {
         res.render('games_ajax', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites', user: user });
@@ -77,18 +76,18 @@ app.get('/favorites', async function (req, res, next) {
 });
 
 app.get('/search', async function (req, res, next) {
-    user = req.session.user_name;
+    user = req.session.userName;
     res.render('games_ajax', { title: 'Risultati ricerca per: "' + req.query.txtRicerca + '"', apiFunction: '/api/search?txtRicerca=' + req.query.txtRicerca, user: user });
 });
 
 app.get('/game/:id', async function (req, res, next) {
-    user = req.session.user_name;
+    user = req.session.userName;
     res.render('game_ajax', { apiFunction: '/api/game/' + req.params.id, user: user, dbGet: '/db/getFavorite/' + req.params.id, dbSave: '/db/saveFavorite' + req.params.id, dbDelete: '/db/deleteFavorite' + req.params.id });
 });
 
 //  example of a secure page
 app.get('/secure', async function(req, res, next) {
-    user = req.session.user_name;
+    user = req.session.userName;
     const access_token = req.session.token;
     if(access_token){
         res.status(200).send("Sei in una pagina sicura con " + access_token);
@@ -112,6 +111,5 @@ app.use(function (err, req, res, next) {
     res.status(err.status || 500);
     res.render('error');
 });
-
 
 module.exports = app;

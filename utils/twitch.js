@@ -1,4 +1,5 @@
 const axios = require('axios');
+const logger = require('./logger');
 
 const GRANT_TYPE = "client_credentials";
 let access_token;
@@ -24,7 +25,7 @@ async function auth_to_twitch() {
     const response = await axios.post(url, data);
 
     // Handle the response data
-    console.log('Twitch authentication response data:', response.data);
+    logger.debug('Twitch authentication response data:', response.data);
 
     // mi salvo i dati dal json di risposta che mi servono per dopo
     access_token = response.data.access_token;
@@ -34,7 +35,7 @@ async function auth_to_twitch() {
 
   } catch (error) {
     // Handle any errors that occurred during the HTTP request
-    console.error('Twitch error:', error.message);
+    logger.error('Twitch error:', error.message);
   }
   return credentials;
 }
