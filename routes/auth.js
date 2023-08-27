@@ -152,7 +152,7 @@ router.get('/callback', async (req, res) => {
     console.log("Ottenuto access token: " + accessToken.token.access_token);
     console.log(req.session)
 
-    return res.redirect('/'); // redirect to home page --> da cambiare verso /username
+    return res.redirect('/username'); // redirect to home page --> da cambiare verso /username
 
   } catch (error) {
     console.error('Access Token Error', error.message);
@@ -168,17 +168,18 @@ router.get('/username', async (req, res) => {
     });
 
     const headers = {
-      'Authorization': 'Bearer ' + req.session.oauth_token
+      'Authorization': 'Bearer ' + req.session.token
     };
 
     // Effettua la chiamata al server su localhost:443
-    const response = await axios.post('https://localhost:443/secure', headers, { httpsAgent: agent });
-    console.log('Risposta dal server:', response.data);
+    const response = await axios.get('https://localhost:443/oauth/username', { headers: headers }, { httpsAgent: agent });
+    //console.log('Header verso server:', req.headers);
     req.session.userName = response.data;
-
+    //console.log(req.session.userName);
     res.redirect('/');
   } catch (error) {
     console.error('Errore durante la chiamata POST al server per l\'accesso alla risorsa protetta (username):', error);
+    console.log('Header verso server:', req.headers);
     res.status(500).send('Errore durante la chiamata al server oauth2');
   }
 });
@@ -208,10 +209,13 @@ router.get('/refresh-token', async (req, res) => {
     res.status(500).send('Error refreshing access token');
   }
 });
+router.get('/login', async function (req, res, next) {
+  res.redirect('/user/authorize'); 
+});
 
 router.get('/logout', async function (req, res, next) {
   req.session.token = '';
-  res.status(200).send('Logout effettuato correttamente'); 
+  res.render('message', { message: 'Logout effettuato correttamente', redirect: '' });
 });
 
 module.exports = router

@@ -49,7 +49,8 @@ app.use('/api', require('./routes/api'));
 *   all express endpoints (found in the menu)
 */
 app.get('/', async function (req, res, next) {
-    user = req.session.user_name;
+    user = req.session.userName;
+    console.log(user);
     res.render('games_ajax', { title: 'I migliori', apiFunction: '/api/best', user: user });
 });
 
@@ -69,8 +70,9 @@ app.get('/favorites', async function (req, res, next) {
     if (access_token) {
         res.render('games_ajax', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites', user: user });
     } else {
-        res.status(403).send('Access token not found in the session.');
-        res.redirect('/user/authorize');
+        //res.status(403).send('Access token not found in the session.');
+        //res.redirect('/user/authorize');
+        res.render('message', { message: "Devi effettuare l'accesso per poter visualizzare il contenuto", redirect: "/user/authorize" });
     }
 });
 
@@ -84,11 +86,7 @@ app.get('/game/:id', async function (req, res, next) {
     res.render('game_ajax', { apiFunction: '/api/game/' + req.params.id, user: user, dbGet: '/db/getFavorite/' + req.params.id, dbSave: '/db/saveFavorite' + req.params.id, dbDelete: '/db/deleteFavorite' + req.params.id });
 });
 
-app.get('/login', async function (req, res, next) {
-    res.redirect('/user/authorize'); 
-});
-
-    //  example of a secure page
+//  example of a secure page
 app.get('/secure', async function(req, res, next) {
     user = req.session.user_name;
     const access_token = req.session.token;
