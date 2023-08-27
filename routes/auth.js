@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { ClientCredentials, ResourceOwnerPassword, AuthorizationCode, CreateApplicaiton } = require('simple-oauth2');
+const { AuthorizationCode } = require('simple-oauth2');
 const axios = require('axios');
 const https = require('https');
 const crypto = require('crypto');
-const async = require('hbs/lib/async');
+const logger = require('../utils/logger');
 
 const callbackUrl = "http://localhost:4000/callback";
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // fix for 'Access Token Error Client request error: self-signed certificate' in /callback route
@@ -72,7 +72,6 @@ router.post('/client/register', async function (req, res, next) {
 });
 
 /*
-* NOT PART OF OAUTH FLOW (JUST FOR DEMO)
 * User registration: server reroutes the request to OAuth server in order to get the form
 */
 router.get('/user/register', async function (req, res, next) {
@@ -87,13 +86,12 @@ router.get('/user/register', async function (req, res, next) {
     res.send(response.data);
 
   } catch (error) {
-    console.error('Errore durante la chiamata GET al server per la registrazione utente:', error);
+    logger.error('Errore durante la chiamata GET al server per la registrazione utente:', error);
     res.status(500).send('Errore durante la chiamata al server oauth2');
   }
 });
 
 /*
-* NOT PART OF OAUTH FLOW (JUST FOR DEMO)
 * User registration: intercepts compiled form and send data to OAuth server
 */
 router.post('/user/register', async function (req, res, next) {
@@ -108,12 +106,16 @@ router.post('/user/register', async function (req, res, next) {
 
     // Effettua la chiamata al server su localhost:443
     const response = await axios.post('https://localhost:443/user/register', req.body, { httpsAgent: agent });
-    console.log('Risposta dal server:', response.data);
-    res.redirect('/');
+    
+    logger.debug(`Risposta dal server oauth creazione utente: ` + response.data);
+
+    logger.info('Utente registrato con successo');
+
+    res.render('message', { title: 'Risposta server oauth', message: response.data, redirect: '' });
 
   } catch (error) {
-    console.error('Errore durante la chiamata POST al server per la registrazione utente:', error);
-    res.status(500).send('Errore durante la chiamata al server oauth2');
+    logger.error('Errore durante la chiamata POST al server per la registrazione utente:', error);
+    res.status(500).send('Errore durante la registrazione');
   }
 });
 
@@ -214,8 +216,13 @@ router.get('/login', async function (req, res, next) {
 });
 
 router.get('/logout', async function (req, res, next) {
-  req.session.token = '';
-  res.render('message', { message: 'Logout effettuato correttamente', redirect: '' });
+  if(!req.session.token){
+    res.render('message', { title: 'Logout', message: 'Devi essere loggato per effettuare il logout', redirect: '/login' });
+  } else {
+    req.session.token = '';
+    req.session.userName = '';
+    res.render('message', { title: 'Logout', message: 'Logout effettuato correttamente', redirect: '' });
+  }
 });
 
 module.exports = router

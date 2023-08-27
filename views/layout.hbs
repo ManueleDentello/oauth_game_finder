@@ -43,9 +43,13 @@
                             <li><a href="/hype"><i class="fas fa-clock"></i>&nbspI più attesi</a></li>
                             <li><a href="/favorites"><i class="fas fa-star"></i>&nbspI tuoi preferiti</a></li>
 							<li><a href="/client/register"><i class="fa-brands fa-app-store"></i>&nbspRegistrazione client</a></li>
-							<li><a href="/user/register"><i class="fas fa-right-to-bracket"></i>&nbspRegistrazione utente</a></li>
-							<li><a href="/user/authorize"><i class="fas fa-user"></i>&nbspLogin</a></li>
-							<li><a href="/logout"><i class="fas fa-right-from-bracket"></i></i>&nbspLogout</a></li>
+							<li>{{#if user}} 
+									<a href="/logout"><i class="fas fa-right-from-bracket"></i></i>&nbspLogout</a>
+								{{else}}
+									<a href="/user/register"><i class="fas fa-right-to-bracket"></i>&nbspRegistrazione utente</a>
+									<a href="/user/authorize"><i class="fas fa-user"></i>&nbspLogin</a>
+								{{/if}}
+							</li>
                             <li>
                                 <form action="/search">
                                     <!-- <i class="fas fa-search" style="display: inline; float: left; vertical-align: middle; width: 20%"></i> -->
