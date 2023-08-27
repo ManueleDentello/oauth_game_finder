@@ -87,8 +87,8 @@ app.get('/game/:id', async function (req, res, next) {
 
 //  example of a secure page
 app.get('/secure', async function(req, res, next) {
-    user = req.session.userName;
-    const access_token = req.session.token;
+    const user = req.session.userName;
+    const access_token = req.session.oauth_token.access_token;
     if(access_token){
         res.status(200).send("Sei in una pagina sicura con " + access_token);
     } else {

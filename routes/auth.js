@@ -5,6 +5,7 @@ const axios = require('axios');
 const https = require('https');
 const crypto = require('crypto');
 const logger = require('../utils/logger');
+const { access } = require('fs');
 
 const callbackUrl = "http://localhost:4000/callback";
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // fix for 'Access Token Error Client request error: self-signed certificate' in /callback route
@@ -145,20 +146,22 @@ router.get('/callback', async (req, res) => {
   try {
     const accessToken = await config.getToken(options);
 
-    console.log('The resulting token: ', accessToken.token);
+    accessToken.expired();
 
-    console.log(accessToken);
-    req.session.token = accessToken.token.access_token; // store the token in the browser session
-    // salvo tutto quello che ritorna il server oauth nella session
-    req.session.oauth_token = accessToken.token // store the token in the browser session
-    console.log("Ottenuto access token: " + accessToken.token.access_token);
-    console.log(req.session)
+    // Aggiungo token di sessione alla sessione corrente
+    //req.session.token = accessToken.token.access_token;
 
-    return res.redirect('/username'); // redirect to home page --> da cambiare verso /username
+    // Salvo tutto quello che ritorna il server oauth nella sessione corrente
+    req.session.oauth_token = accessToken.token;
+
+    logger.info("Ottenuto access token: " + accessToken.token.access_token);
+
+    // Mando utente verso redirect per prendere lo username
+    res.redirect('/username');
 
   } catch (error) {
     console.error('Access Token Error', error.message);
-    return res.status(500).json('Authentication failed');
+    res.status(500).json('Authentication failed');
   }
 });
 
@@ -170,18 +173,20 @@ router.get('/username', async (req, res) => {
     });
 
     const headers = {
-      'Authorization': 'Bearer ' + req.session.token
+      'Authorization': 'Bearer ' + req.session.oauth_token.access_token
     };
 
     // Effettua la chiamata al server su localhost:443
     const response = await axios.get('https://localhost:443/oauth/username', { headers: headers }, { httpsAgent: agent });
-    //console.log('Header verso server:', req.headers);
+
+    // Salvo lo username nella sessione corrente
     req.session.userName = response.data;
-    //console.log(req.session.userName);
+    logger.info('Utente loggato: ' + req.session.userName);
+
+    // Mando l'utente nella home - fine autenticazione
     res.redirect('/');
   } catch (error) {
-    console.error('Errore durante la chiamata POST al server per l\'accesso alla risorsa protetta (username):', error);
-    console.log('Header verso server:', req.headers);
+    logger.error('Errore durante la chiamata POST al server per l\'accesso alla risorsa protetta (username):', error);
     res.status(500).send('Errore durante la chiamata al server oauth2');
   }
 });
@@ -190,25 +195,29 @@ router.get('/username', async (req, res) => {
 * request a new token to oauth server when the old one expires
 */
 router.get('/refresh-token', async (req, res) => {
-  // not yet implemented correctly
-  try {
-    const refreshToken = req.session.oauth_token.refresh_token;
-    console.log(refreshToken)
+  const accessToken = await config.createToken(req.session.oauth_token);
+  const EXPIRATION_WINDOW_IN_SECONDS = 3599;
+    
+  if(accessToken.expired(EXPIRATION_WINDOW_IN_SECONDS)) {
+    try {
+      const refreshParams = {
+        refresh_token: req.session.oauth_token.refresh_token,
+        grant_type: 'refresh_token',
+        redirect_uri: callbackUrl
+      };
 
-    const refreshParams = {
-      refresh_token: refreshToken,
-    };
+      const result = await accessToken.refresh(refreshParams);
+      
+      // Salvo tutto quello che ritorna il server oauth nella sessione corrente
+      req.session.oauth_token = result.token;
 
-    const result = await config.accessToken.create({ refresh_token: refreshToken }).refresh();
+      logger.info('Token refreshato');
 
-    console.log(result)
-    // Update the access token in the session
-    //req.session.accessToken = result.token.access_token;
-
-    res.send('Access token refreshed');
-  } catch (error) {
-    console.error('Error refreshing access token:', error.message);
-    res.status(500).send('Error refreshing access token');
+      res.send('Access token refreshed');
+    } catch (error) {
+      console.error('Error refreshing access token:', error.message);
+      res.status(500).send('Error refreshing access token');
+    }
   }
 });
 router.get('/login', async function (req, res, next) {
@@ -219,10 +228,14 @@ router.get('/logout', async function (req, res, next) {
   if(!req.session.token){
     res.render('message', { title: 'Logout', message: 'Devi essere loggato per effettuare il logout', redirect: '/login' });
   } else {
-    req.session.token = '';
     req.session.userName = '';
+    //req.session.oauth_token;
     res.render('message', { title: 'Logout', message: 'Logout effettuato correttamente', redirect: '' });
   }
+});
+
+router.get('/userinfo', (req, res) => {
+  res.send(req.session);
 });
 
 module.exports = router
