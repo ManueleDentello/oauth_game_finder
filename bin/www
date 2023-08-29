@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 
-var app = require('../app');
+const app = require('../app');
 const logger = require('../utils/logger')
-var http = require('http');
+const http = require('http');
+const https = require('https');
+const fs = require('fs');
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '4000');
+var port = normalizePort(process.env.PORT || '8080');
 app.set('port', port);
 
 /**
@@ -84,3 +86,8 @@ function onListening() {
     : 'port ' + addr.port;
   logger.info('Server started on port ' + bind);
 }
+
+https.createServer({
+  key: fs.readFileSync('./cert/server.key'),
+  cert: fs.readFileSync('./cert/server.cert'),
+}, app).listen(8443);
