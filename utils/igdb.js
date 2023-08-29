@@ -1,7 +1,7 @@
 var apicalypse = require('apicalypse').default;
+const logger = require('./logger');
 //var authentication = require('./authentication.js');
 
-const APIKEY = "756eb246e6c4b0a66a0d76100b35581e";
 const LIMITE = 18;
 const IGDB_GAMES = "https://api.igdb.com/v4/games";
 const IGDB_GAME_VIDEOS = "https://api.igdb.com/v4/game_videos";
@@ -32,7 +32,7 @@ async function getBest(client_id, access_token){
         .request(IGDB_GAMES); // execute the query and return a response object
 
     prepareTiles(games);        // prepara copertina e generi per ciascuna locandina
-    //console.log(games.data);
+    console.log(games.data);
     return games.data;
 }
 
@@ -77,10 +77,7 @@ async function getHype(client_id, access_token){
     return games.data;
 }
 
-async function getFavorites(id, client_id, access_token){
-    if (id === undefined) {
-        return null;
-    }
+async function getFavorites(ids, client_id, access_token){
     const games = await apicalypse({
         queryMethod: 'body',
         method: 'post',
@@ -90,7 +87,7 @@ async function getFavorites(id, client_id, access_token){
         }
     })
         .fields('name,genres.name,cover.url')
-        .where('id = (' + id + ')') // multiple ids may be present
+        .where('id = (' + ids + ')') // multiple ids may be present
         .request(IGDB_GAMES); // execute the query and return a response object
     console.log(games.data);
     prepareTiles(games); 
@@ -130,7 +127,7 @@ async function getGame(id, client_id, access_token){
         .where('id = ' + id)
         .request(IGDB_GAMES); // execute the query and return a response object
 
-    console.log(game.data[0].genres);
+    //console.log(game.data[0].genres);
 
     // campi obbligatori
     for(gex in game.data[0].genres)
