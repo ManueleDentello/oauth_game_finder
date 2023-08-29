@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const logger = require('../utils/logger');
 const { access } = require('fs');
 
-const callbackUrl = "http://localhost:4000/callback";
+const callbackUrl = process.env.OAUTH_CALLBACK_URL;
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // fix for 'Access Token Error Client request error: self-signed certificate' in /callback route
 
 const config = new AuthorizationCode({
@@ -138,6 +138,7 @@ router.get('/user/authorize', async(req, res) => {
 */
 router.get('/callback', async (req, res) => {
   const { code } = req.query; // create a variable that stores the value of "code" query parameter
+  console.log('Quello che c\'è in req: \n' + req.body);
   const options = {
     code,
     redirect_uri: callbackUrl
@@ -232,10 +233,13 @@ router.get('/logout', async function (req, res, next) {
     //req.session.oauth_token;
     res.render('message', { title: 'Logout', message: 'Logout effettuato correttamente', redirect: '' });
   }
+
+  // revocare token, auth code e quant'altro?
+  // chiudere connessione al database
 });
 
 router.get('/userinfo', (req, res) => {
   res.send(req.session);
 });
 
-module.exports = router
+module.exports = { router, config }
