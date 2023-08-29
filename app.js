@@ -5,8 +5,10 @@ const cookieParser = require('cookie-parser');
 const logger = require('./utils/logger');
 const session = require('express-session');
 require('dotenv').config();
-
+const auth = require('./routes/auth'); 
 const app = express();
+
+const callbackUrl = process.env.OAUTH_CALLBACK_URL;
 
 // handlebars setup
 app.set('views', path.join(__dirname, 'views'));
@@ -40,16 +42,55 @@ app.use(async function (req, res, next) {
   });
 */
 
+
+//Redirect all http requests to https (comment out next 4 lines if you want to run a test)
+app.all('*', async function(req, res, next){
+    // chiamata alla funzione
+    if (req.session.oauth_token) {
+        const accessToken = await auth.config.createToken(req.session.oauth_token);
+        const EXPIRATION_WINDOW_IN_SECONDS = 300;
+        logger.info('Checking access token validity...');
+
+        if (accessToken.expired(EXPIRATION_WINDOW_IN_SECONDS)) {
+            try {
+                const refreshParams = {
+                    refresh_token: req.session.oauth_token.refresh_token,
+                    grant_type: 'refresh_token',
+                    redirect_uri: callbackUrl
+                };
+
+                const result = await accessToken.refresh(refreshParams);
+
+                // Salvo tutto quello che ritorna il server oauth nella sessione corrente
+                req.session.oauth_token = result.token;
+
+                logger.info('Token refreshato');
+
+                next();
+            } catch (error) {
+                console.error('Error refreshing access token:', error.message);
+                next(error);
+            }
+        }
+        next();
+    }
+    else
+        next();
+    
+    //if (req.secure) return next()
+    //res.redirect(307, 'https://' + req.hostname + req.url)
+  })
+
 //partition of routes in separated modules based on authentication endpoints and api endpoints (mongodb or igdb)
-app.use("/", require("./routes/auth"));
+app.use("/", auth.router);
 app.use('/api', require('./routes/api'));
 
 /*
 *   all express endpoints (found in the menu)
 */
+
 app.get('/', async function (req, res, next) {
     user = req.session.userName;
-    logger.info(user);
     res.render('games_ajax', { title: 'I migliori', apiFunction: '/api/best', user: user });
 });
 
@@ -65,9 +106,9 @@ app.get('/hype', async function (req, res, next) {
 
 app.get('/favorites', async function (req, res, next) {
     user = req.session.userName;
-    const access_token = req.session.token;
+    const access_token = req.session.oauth_token;
     if (access_token) {
-        res.render('games_ajax', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites', user: user });
+        res.render('games_ajax copy', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites', user: user });
     } else {
         //res.status(403).send('Access token not found in the session.');
         //res.redirect('/user/authorize');
@@ -82,13 +123,17 @@ app.get('/search', async function (req, res, next) {
 
 app.get('/game/:id', async function (req, res, next) {
     user = req.session.userName;
-    res.render('game_ajax', { apiFunction: '/api/game/' + req.params.id, user: user, dbGet: '/db/getFavorite/' + req.params.id, dbSave: '/db/saveFavorite' + req.params.id, dbDelete: '/db/deleteFavorite' + req.params.id });
-});
+    if (user)
+        res.render('game_ajax copy logged', { apiFunction: '/api/game/' + req.params.id, user: user, dbGet: '/api/getFavorite/' + req.params.id, dbSave: '/api/saveFavorite/' + req.params.id, dbDelete: '/api/deleteFavorite/' + req.params.id });
+    else 
+        res.render('game_ajax copy', { apiFunction: '/api/game/' + req.params.id, user: user });
+    });
 
 //  example of a secure page
 app.get('/secure', async function(req, res, next) {
     const user = req.session.userName;
     const access_token = req.session.oauth_token.access_token;
+
     if(access_token){
         res.status(200).send("Sei in una pagina sicura con " + access_token);
     } else {
