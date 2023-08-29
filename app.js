@@ -25,7 +25,7 @@ app.use(session({
     token: '',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false },  // to be modified
+    cookie: { secure: true },  // to be modified
   }))
 
 /*
