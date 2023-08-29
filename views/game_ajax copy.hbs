@@ -2,28 +2,6 @@
 <div id="gameData"></div>
 
 <script type="text/javascript">
-
-    function changeFavoriteStatus(id) {
-        /*  
-         *  favorite button logic
-         *  2 jquery calls in order to save or delete the game as a favorite, showing the status on the button
-         */
-        if ($("#favBut").text() == 'NON PREFERITO') {
-            $.getJSON("{{{dbSave}}}").done(function (result) {
-            if (result) {
-                $("#favBut").text("PREFERITO").addClass("primary");
-            }
-        }).fail(function () {
-            alert("Error on the query {{getFavorite}}");
-        });
-        } else {
-            $.getJSON("{{{dbDelete}}}").done(function (result) {
-            if (result) {
-                $("#favBut").text("NON PREFERITO").removeClass("primary");  // it does 2 things at the same time (text and remoe css class)
-            }
-        }
-    }
-
     window.onload = function () {
         // jquery call to api endpoint /game:id that will immediately query external db (igdb)
         $.getJSON("{{{apiFunction}}}").done(function (game) {   // this is the jquery call that queries all favorite games
@@ -92,16 +70,6 @@
             $("#gameData").append(gameHTML);
         }).fail(function () {
             alert("Error on the query {{apiFunction}}");
-        });
-
-        //  Another jquery call to db to know if the game is a favorite for the user
-        $.getJSON("{{{dbGet}}}").done(function (isFavorite) {
-            if (isFavorite) {
-                $("#favBut").text("PREFERITO").addClass("primary");
-            }
-            $("#favBut").show();
-        }).fail(function () {
-            alert("Error on the query {{getFavorite}}");
         });
     }
 </script>
