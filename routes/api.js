@@ -51,12 +51,20 @@ router.get('/hype', async function(req, res, next) {
 });
 
 router.get('/favorites', async function(req, res, next) {
-    let user_name = req.session.user_name;
-    let favoritesIds = db.getFavorites(user_name);
-    let favoriteIdsString = favoritesIds.join(',');
-    console.log('favorite games ids: ' + favoriteIdsString);
+    let user_name = req.session.userName;
+    //let user_name = req.params.username;
+    let favorites;
 
-    let favorites = await igdb.getFavorites(favoriteIdsString, twitch_client_id, twitch_access_token);  // favoriteIdsString contains all favorite games ids
+    let favoritesIds = await db.getFavorites(user_name);
+    if (favoritesIds != null) {
+        let favoriteIdsJoined = favoritesIds.join(',');
+        favorites = await igdb.getFavorites(favoriteIdsJoined, twitch_client_id, twitch_access_token);  // favoriteIdsString contains all favorite games ids
+    }
+    else
+        favorites = '';
+    
+    //console.log('favorite games ids: ' + favoriteIdsString);
+    console.log(favorites);
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(favorites));
 });
@@ -73,27 +81,37 @@ router.get('/game/:id', async function(req, res, next) {
     res.end(JSON.stringify(game));
 });
 
-//  MongoDB endpoints
-router.get('db/deleteFavorite/:id', async function(req, res, next) {
-    let user_name = req.session.user_name;
+/*
+ *  MongoDB endpoints
+ */
+router.get('/deleteFavorite/:id', async function(req, res, next) {
+    let user_name = req.session.userName;
+    //let user_name = req.params.username;
+
     let game_id = req.params.id;
-    var result = db.deleteFavorite(user_name, game_id);
+    var result = await db.deleteFavorite(user_name, game_id);
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(result));
 });
 
-router.get('db/saveFavorite/:id', async function(req, res, next) {
-    let user_name = req.session.user_name;
+router.get('/saveFavorite/:id', async function(req, res, next) {
+    let user_name = req.session.userName;
+    //let user_name = req.params.username;
+
     let game_id = req.params.id;
-    var result = db.saveFavorite(user_name, game_id);
+    var result = await db.saveFavorite(user_name, game_id);
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(result));
 });
 
-router.get('db/getFavorite/:id', async function(req, res, next) {
-    let user_name = req.session.user_name;
+router.get('/getFavorite/:id', async function(req, res, next) {
+    let user_name = req.session.userName;
+    //let user_name = req.params.username;
+    console.log("username: " + user_name);
+
     let game_id = req.params.id;
-    var result = db.getFavorite(user_name, game_id);
+    var result = await db.getFavorite(user_name, game_id);
+    console.log('Risultato del db: ' + JSON.stringify(result));
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(result));
 });
