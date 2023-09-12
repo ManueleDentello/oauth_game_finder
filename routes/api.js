@@ -1,82 +1,83 @@
 const db = require('../utils/mongodb');
 const express = require('express')
 const igdb = require('../utils/igdb');
-const authentication = require('../utils/twitch.js');
+const logger = require('../utils/logger');
 const { route } = require('./auth');
 const router = express.Router();
 
-// IGDB api
-
-var twitch_client_id = "";
-var twitch_access_token = "";
-
-async function get_twitch_stuff() {
-    /* 
-    * Retrieve twitch_client_id and twitch_access_token from utils/twitch.js
-    */
-
-
-    // HO CREATO UNA VERSIONE CON LA SESSION, FORSE STA ROBA NON SERVE PIU'
-    const risultato = await authentication.auth_to_twitch();
-
-    twitch_client_id = risultato.client_id;
-    twitch_access_token = risultato.access_token;
-
-
-};
-
-get_twitch_stuff();
-
 /*
- *  ATTENTION: these are api endpoints, not web endpoints. They are called by handlebars views
+ *  IGDB endpoints
+ *  ATTENTION: these are api endpoints, not web endpoints. They are called by handlebars views to get the data to be rendered
  *  flow: web link -> web endpoint in app.js -> games_ajax or game_ajax view -> api endpoint (igdb or db) -> query igdb -> HTML render
  */
 router.get('/best', async function (req, res, next) {
-    // in caso di utilizzo della nuova route per igdb, posso usare la session per recuperare i dati aziché passarmeli sempre come parametri
-    let games = await igdb.getBest(twitch_client_id/*req.session.twitch_client_id*/, twitch_access_token/*req.session.twitch_client_secret*/);
+    const twitchClientID = req.session.twitchClientID;
+    const twitchAccessToken = req.session.twitchAccessToken;
+
+    let games = await igdb.getBest(twitchClientID, twitchAccessToken);
+
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(games));
 });
 
 router.get('/popular', async function(req, res, next) {
-    let games = await igdb.getPopular(twitch_client_id, twitch_access_token);
+    const twitchClientID = req.session.twitchClientID;
+    const twitchAccessToken = req.session.twitchAccessToken;
+
+    let games = await igdb.getPopular(twitchClientID, twitchAccessToken);
+
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(games));
 });
 
 router.get('/hype', async function(req, res, next) {
-    let games = await igdb.getHype(twitch_client_id, twitch_access_token);
+    const twitchClientID = req.session.twitchClientID;
+    const twitchAccessToken = req.session.twitchAccessToken;
+
+    let games = await igdb.getHype(twitchClientID, twitchAccessToken);
+
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(games));
 });
 
 router.get('/favorites', async function(req, res, next) {
-    let user_name = req.session.userName;
-    //let user_name = req.params.username;
-    let favorites;
+    const userName = req.session.userName;
+    const twitchClientID = req.session.twitchClientID;
+    const twitchAccessToken = req.session.twitchAccessToken;
+    let favoritesJSON;
 
-    let favoritesIds = await db.getFavorites(user_name);
-    if (favoritesIds != null) {
-        let favoriteIdsJoined = favoritesIds.join(',');
-        favorites = await igdb.getFavorites(favoriteIdsJoined, twitch_client_id, twitch_access_token);  // favoriteIdsString contains all favorite games ids
+    let favoritesIDsArray = await db.getFavorites(userName);
+    if (favoritesIDsArray != null) {
+        let favoriteIDsString = favoritesIDsArray.join(',');
+        favoritesJSON = await igdb.getFavorites(favoriteIDsString, twitchClientID, twitchAccessToken);  // favoriteIdsString contains all favorite games ids
     }
     else
-        favorites = '';
-    
-    //console.log('favorite games ids: ' + favoriteIdsString);
-    console.log(favorites);
+        favoritesJSON = '';
+
+    logger.debug('Favorites: ', favoritesJSON);
+
     res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify(favorites));
+    res.end(JSON.stringify(favoritesJSON));
 });
 
 router.get('/search', async function(req, res, next) {
-    let output = await igdb.getSearched(req.query.txtRicerca, twitch_client_id, twitch_access_token);
+    const twitchClientID = req.session.twitchClientID;
+    const twitchAccessToken = req.session.twitchAccessToken;
+    const keywordSearched = req.query.txtRicerca;
+
+    let output = await igdb.getSearched(keywordSearched, twitchClientID, twitchAccessToken);
+
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(output));
 });
 
 router.get('/game/:id', async function(req, res, next) {
-    let game = await igdb.getGame(req.params.id, twitch_client_id, twitch_access_token);
+    const twitchClientID = req.session.twitchClientID;
+    const twitchAccessToken = req.session.twitchAccessToken;
+    const gameID = req.params.id;
+
+    let game = await igdb.getGame(gameID, twitchClientID, twitchAccessToken);
+
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(game));
 });
@@ -85,33 +86,31 @@ router.get('/game/:id', async function(req, res, next) {
  *  MongoDB endpoints
  */
 router.get('/deleteFavorite/:id', async function(req, res, next) {
-    let user_name = req.session.userName;
-    //let user_name = req.params.username;
+    const userName = req.session.userName;
+    const gameID = req.params.id;
 
-    let game_id = req.params.id;
-    var result = await db.deleteFavorite(user_name, game_id);
+    let result = await db.deleteFavorite(userName, gameID);
+
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(result));
 });
 
 router.get('/saveFavorite/:id', async function(req, res, next) {
-    let user_name = req.session.userName;
-    //let user_name = req.params.username;
+    const userName = req.session.userName;
+    const gameID = req.params.id;
 
-    let game_id = req.params.id;
-    var result = await db.saveFavorite(user_name, game_id);
+    let result = await db.saveFavorite(userName, gameID);
+
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(result));
 });
 
 router.get('/getFavorite/:id', async function(req, res, next) {
-    let user_name = req.session.userName;
-    //let user_name = req.params.username;
-    console.log("username: " + user_name);
+    const userName = req.session.userName;
+    const gameID = req.params.id;
 
-    let game_id = req.params.id;
-    var result = await db.getFavorite(user_name, game_id);
-    console.log('Risultato del db: ' + JSON.stringify(result));
+    let result = await db.getFavorite(userName, gameID);
+
     res.setHeader("Content-Type", "application/json");
     res.end(JSON.stringify(result));
 });
