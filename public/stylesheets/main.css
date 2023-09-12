@@ -30,6 +30,10 @@
 	padding: 5%;
 }
 
+#btnCerca {
+	box-shadow: none;
+}
+
 html, body, div, span, applet, object,
 iframe, h1, h2, h3, h4, h5, h6, p, blockquote,
 pre, a, abbr, acronym, address, big, cite,
@@ -2491,7 +2495,7 @@ input, select, textarea {
 		padding: 0 1.25em 0 1.6em;
 		text-align: center;
 		text-decoration: none;
-		text-overflow: ellipsis;
+		/*text-overflow: ellipsis;*/			/* aggiunge i 3 puntini se il pulsante è troppo stretto*/
 		text-transform: uppercase;
 		white-space: nowrap;
 	}
@@ -3029,7 +3033,7 @@ input, select, textarea {
 		max-width: 80%;
 		height: 100%;
 		-webkit-overflow-scrolling: touch;
-		background: #585858;  /*modifica, prima #585858*/
+		background: black;  /*modifica, prima #585858*/
 		color: #ffffff;
 		cursor: default;
 		visibility: hidden;
