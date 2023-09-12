@@ -4,11 +4,13 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('./utils/logger');
 const session = require('express-session');
+const authentication = require('./utils/twitch.js');
 require('dotenv').config();
 const auth = require('./routes/auth'); 
 const app = express();
-
 const callbackUrl = process.env.OAUTH_CALLBACK_URL;
+const EXPIRATION_WINDOW_IN_SECONDS = 300;
+const REFRESH_TOKEN_GRANT_TYPE = 'refresh_token';
 
 // handlebars setup
 app.set('views', path.join(__dirname, 'views'));
@@ -21,64 +23,61 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
-    secret: 'oauth-game-finder',
+    secret: 'oauth-game-finder-secret',
     token: '',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: true },  // to be modified
+    cookie: { secure: false },  // ON if https, OFF if http
+    // httpOnly is on by default
   }))
 
-/*
- proposal on how to handle igdb connection at the startup of the server and to store in the session client_id and client_secret
+ //function to connect or stay connected to the twitch OAuth server in order to be able to retrieve data from igdb
 app.use(async function (req, res, next) {
-    if (!req.session.twitch_client_id || !req.session.twitch_client_secret) {
-        const credentials = await twitch.auth_to_twitch();
-        req.session.twitch_client_id = credentials.client_id;
-        req.session.twitch_client_secret = credentials.client_secret;
+    if (!req.session.twitchClientID || !req.session.twitchAccessToken) {
+        const credentials = await authentication.auth_to_twitch();
+        req.session.twitchClientID = credentials.clientID;
+        req.session.twitchAccessToken = credentials.accessToken;
     }
-    // testare per vedere se prende il valore correttamente e per vedere quante volte gira
-    console.log('Twitch client id: ' + req.session.twitch_client_id + ', Twitch client secret: ' + req.session.twitch_client_secret);
     next();
   });
-*/
-
 
 //Redirect all http requests to https (comment out next 4 lines if you want to run a test)
+/*
+app.all('*', function(req, res, next){
+    if (req.secure) return next()
+    res.redirect(307, 'https://' + req.hostname + req.url)
+})
+*/
+
+// constantly check the validy of the token and refresh if that's the case
 app.all('*', async function(req, res, next){
-    // chiamata alla funzione
     if (req.session.oauth_token) {
-        const accessToken = await auth.config.createToken(req.session.oauth_token);
-        const EXPIRATION_WINDOW_IN_SECONDS = 300;
+        let accessToken = await auth.config.createToken(req.session.oauth_token);
         logger.info('Checking access token validity...');
 
+        /*
+        // check if the token expires within the amount of time specified
         if (accessToken.expired(EXPIRATION_WINDOW_IN_SECONDS)) {
             try {
                 const refreshParams = {
                     refresh_token: req.session.oauth_token.refresh_token,
-                    grant_type: 'refresh_token',
+                    grant_type: REFRESH_TOKEN_GRANT_TYPE,
                     redirect_uri: callbackUrl
                 };
-
                 const result = await accessToken.refresh(refreshParams);
 
-                // Salvo tutto quello che ritorna il server oauth nella sessione corrente
+                // Save internally all info coming from the OAuth server
                 req.session.oauth_token = result.token;
-
-                logger.info('Token refreshato');
-
-                next();
+                logger.info('Token refreshed');
             } catch (error) {
                 console.error('Error refreshing access token:', error.message);
                 next(error);
             }
         }
-        next();
+        */
+        res.redirect('/refresh-token');
     }
-    else
-        next();
-    
-    //if (req.secure) return next()
-    //res.redirect(307, 'https://' + req.hostname + req.url)
+    next();
   })
 
 //partition of routes in separated modules based on authentication endpoints and api endpoints (mongodb or igdb)
@@ -88,50 +87,55 @@ app.use('/api', require('./routes/api'));
 /*
 *   all express endpoints (found in the menu)
 */
-
 app.get('/', async function (req, res, next) {
-    user = req.session.userName;
-    res.render('games_ajax', { title: 'I migliori', apiFunction: '/api/best', user: user });
+    userName = req.session.userName;
+    
+    res.render('games_ajax', { title: 'I migliori', apiFunction: '/api/best', user: userName });
 });
 
 app.get('/popular', async function (req, res, next) {
-    user = req.session.userName;
-    res.render('games_ajax', { title: 'I più popolari', apiFunction: '/api/popular', user: user });
+    userName = req.session.userName;
+
+    res.render('games_ajax', { title: 'I più popolari', apiFunction: '/api/popular', user: userName });
 });
 
 app.get('/hype', async function (req, res, next) {
-    user = req.session.userName;
-    res.render('games_ajax', { title: 'I più attesi', apiFunction: '/api/hype', user: user });
+    userName = req.session.userName;
+
+    res.render('games_ajax', { title: 'I più attesi', apiFunction: '/api/hype', user: userName });
 });
 
 app.get('/favorites', async function (req, res, next) {
-    user = req.session.userName;
-    const access_token = req.session.oauth_token;
-    if (access_token) {
-        res.render('games_ajax copy', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites', user: user });
+    userName = req.session.userName;
+    const accessToken = req.session.oauth_token;
+
+    if (accessToken) {
+        res.render('games_ajax copy', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites', user: userName });
     } else {
-        //res.status(403).send('Access token not found in the session.');
-        //res.redirect('/user/authorize');
-        res.render('message', { message: "Devi effettuare l'accesso per poter visualizzare il contenuto", redirect: "/user/authorize" });
+        res.render('message', { title: 'I tuoi preferiti', message: "Questa pagina è protetta, non puoi vedere i preferiti se non hai fatto login", user: userName });
     }
 });
 
 app.get('/search', async function (req, res, next) {
-    user = req.session.userName;
-    res.render('games_ajax', { title: 'Risultati ricerca per: "' + req.query.txtRicerca + '"', apiFunction: '/api/search?txtRicerca=' + req.query.txtRicerca, user: user });
+    userName = req.session.userName;
+
+    if (req.query.txtRicerca == '')
+        res.render('message', { title: 'Risultati ricerca', message: 'La ricerca è vuota', user: userName });
+    else
+        res.render('games_ajax', { title: 'Risultati ricerca per: "' + req.query.txtRicerca + '"', apiFunction: '/api/search?txtRicerca=' + req.query.txtRicerca, user: userName });
 });
 
 app.get('/game/:id', async function (req, res, next) {
-    user = req.session.userName;
-    if (user)
-        res.render('game_ajax copy logged', { apiFunction: '/api/game/' + req.params.id, user: user, dbGet: '/api/getFavorite/' + req.params.id, dbSave: '/api/saveFavorite/' + req.params.id, dbDelete: '/api/deleteFavorite/' + req.params.id });
+    userName = req.session.userName;
+
+    if (userName)
+        res.render('game_ajax copy logged', { apiFunction: '/api/game/' + req.params.id, user: userName, dbGet: '/api/getFavorite/' + req.params.id, dbSave: '/api/saveFavorite/' + req.params.id, dbDelete: '/api/deleteFavorite/' + req.params.id });
     else 
-        res.render('game_ajax copy', { apiFunction: '/api/game/' + req.params.id, user: user });
+        res.render('game_ajax copy', { apiFunction: '/api/game/' + req.params.id, user: userName });
     });
 
 //  example of a secure page
 app.get('/secure', async function(req, res, next) {
-    const user = req.session.userName;
     const access_token = req.session.oauth_token.access_token;
 
     if(access_token){
