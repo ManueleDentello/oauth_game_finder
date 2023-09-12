@@ -1,6 +1,5 @@
 var apicalypse = require('apicalypse').default;
 const logger = require('./logger');
-//var authentication = require('./authentication.js');
 
 const LIMITE = 18;
 const IGDB_GAMES = "https://api.igdb.com/v4/games";
@@ -12,10 +11,13 @@ const IGDB_WEBSITES = "https://api.igdb.com/v4/websites";
 const IGDB_SCREENSHOTS = "https://api.igdb.com/v4/screenshots";
 const IGDB_COVERS = "https://api.igdb.com/v4/covers"
 
+//not used (kept for legacy support)
 let genresCache = {};
 let coversCache = {};
 
-// FUNZIONI PER LE PAGINE
+/*
+ *  main functions
+ */
 async function getBest(client_id, access_token){
     const games = await apicalypse({
         queryMethod: 'body',
@@ -31,8 +33,7 @@ async function getBest(client_id, access_token){
         .where('name != null & genres != null & cover != null & rating_count >= 100 & aggregated_rating_count > 5 & rating != null')
         .request(IGDB_GAMES); // execute the query and return a response object
 
-    prepareTiles(games);        // prepara copertina e generi per ciascuna locandina
-    console.log(games.data);
+    prepareTiles(games);    // setup of name and genre of each tile
     return games.data;
 }
 
@@ -47,7 +48,7 @@ async function getPopular(client_id, access_token){
     })
         .fields('name,genres.name,cover.url')
         .limit(LIMITE)
-        .sort('total_rating_count', 'desc')    //era pulse_count ma non è più supportato
+        .sort('total_rating_count', 'desc')    //pulse_count previously used, not supported anymore
         .where('name != null & genres != null & cover != null & total_rating_count != null')
         .request(IGDB_GAMES); // execute the query and return a response object
 
@@ -129,12 +130,12 @@ async function getGame(id, client_id, access_token){
 
     //console.log(game.data[0].genres);
 
-    // campi obbligatori
+    // mandatory fields
     for(gex in game.data[0].genres)
         game.data[0].genres[gex] = game.data[0].genres[gex].name;
     game.data[0].genres = game.data[0].genres.join(", ");
 
-    // campi facoltativi
+    // optional fields
     if(game.data[0].videos != null)
         game.data[0].videos = game.data[0].videos[0].video_id;
     if(game.data[0].platforms != null) {
@@ -154,7 +155,9 @@ async function getGame(id, client_id, access_token){
     return game.data[0];
 }
 
-// FUNZIONI PER LE INFO DEI GIOCHI
+/*
+ *  functions for getting single items (now getGame takes all necessary)
+ */
 async function getVideo(id){
     const video = await apicalypse({
         queryMethod: 'body',
@@ -273,9 +276,8 @@ async function getCover(id){
     return cover.data[0].url.replace("t_thumb","t_cover_big");
 }
 
-// FUNZIONI DI UTILITY
 /*
-*   questa forse serve a ridurre il numero di query fatte. Tiro giù un po' di generi in un colpo solo anziché fare le chiamate per ogni singolo gioco
+*   utility functions
 */
 async function loadGenresCache(){
     const genres = await apicalypse({
