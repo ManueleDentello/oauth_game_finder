@@ -13,7 +13,7 @@ async function auth_to_twitch() {
 
   try {
     // Set the URL for the HTTP request
-    const url = 'https://id.twitch.tv/oauth2/token'; // Replace with the actual API endpoint
+    const url = 'https://id.twitch.tv/oauth2/token';
 
     const data = {
         client_id: igdb_client_id,
@@ -31,19 +31,18 @@ async function auth_to_twitch() {
     access_token = response.data.access_token;
     client_id = igdb_client_id;
 
-    credentials = { client_id: igdb_client_id, access_token: response.data.access_token };
+    credentials = { 
+      clientID: igdb_client_id, 
+      accessToken: response.data.access_token };
+
+    return credentials;
 
   } catch (error) {
     // Handle any errors that occurred during the HTTP request
     logger.error('Twitch error:', error.message);
   }
-  return credentials;
 }
 
-// da aggiungere funzioen per refresh token twitch
-
 module.exports = {
-  auth_to_twitch: auth_to_twitch,
-  access_token: access_token,
-  client_id: client_id
+  auth_to_twitch: auth_to_twitch
 }
