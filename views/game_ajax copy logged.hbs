@@ -11,7 +11,8 @@
         if ($("#favBut").text() == 'NON PREFERITO') {
             $.getJSON("{{{dbSave}}}").done(function (result) {
             if (result.saved) {
-                $("#favBut").text("PREFERITO").addClass("primary");     // primary significa che è più in risalto (sfondo grigio?)
+                $("#favBut").text("PREFERITO").addClass("primary");
+                console.log('Game saved as favorite');
             }
         }).fail(function () {
             alert("Error on the query {{{dbSave}}}");
@@ -19,7 +20,8 @@
         } else {
             $.getJSON("{{{dbDelete}}}").done(function (result) {
             if (result.deleted) {
-                $("#favBut").text("NON PREFERITO").removeClass("primary");  // it does 2 things at the same time (text and remoe css class)
+                $("#favBut").text("NON PREFERITO").removeClass("primary");  // it does 2 things at the same time (text and remove css class)
+                console.log('Game deleted as favorite');
             }
             }).fail(function () {
                 alert("Error on the query {{{dbDelete}}}");
