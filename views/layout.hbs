@@ -4,10 +4,12 @@
 <html xmlns:style="http://www.w3.org/1999/xhtml">
 	<head>
 		<title>{{title}}</title>
+		<link rel="icon" type="image/x-icon" href="/public/images/gamepad-solid.ico">
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="/stylesheets/main.css" />
 		<noscript><link rel="stylesheet" href="/stylesheets/noscript.css" /></noscript>
+		<script src="https://kit.fontawesome.com/4d6f2af632.js" crossorigin="anonymous"></script>
 
 	</head>
 	<body class="is-preload">
@@ -36,30 +38,25 @@
 
 				<!-- Menu -->
 					<nav id="menu">
-						<h1 style="color: red; text-align:center">{{#if user}} {{user}} {{else}} Ospite {{/if}}</h1>	
+						<h1 style="text-align:center">{{#if user}} <i class="fa-solid fa-user"></i> {{user}} {{else}} <i class="fa-regular fa-user"></i> Ospite {{/if}}</h1>	
 						<ul class="fa-ul">
-							<li><a href="/"><i class="fas fa-medal"></i> I migliori</a></li>
-                            <li><a href="/popular"><i class="fas fa-fire"></i> I più popolari</a></li>
-                            <li><a href="/hype"><i class="fas fa-clock"></i> I più attesi</a></li>
-                            <li><a href="/favorites"><i class="fas fa-star"></i> I tuoi preferiti</a></li>
 							<li>
+								<a href="/"><i class="fas fa-medal"></i> I migliori</a>
+                            	<a href="/popular"><i class="fas fa-fire"></i> I più popolari</a>
+                            	<a href="/hype"><i class="fa-regular fa-calendar-days"></i> I più attesi</a>
+                            	<a href="/favorites"><i class="fas fa-star"></i> I tuoi preferiti</a>
                                 <form action="/search">
-                                    <!-- <i class="fas fa-search" style="display: inline; float: left; vertical-align: middle; width: 20%"></i> -->
-                                    <input style="display: inline; width: 73%" type="text" name="txtRicerca" id="txtRicerca" value="" placeholder="Ricerca" />
-                                    <input style="display: inline" type="submit" value="OK" class="primary" />
-                                    <!-- <button style="display: inline; float: right; width: 20%" class="primary" type="submit"><i class="fas fa-search"></i></button> -->
+                                    <input style="float: left; width: 80%" type="text" name="txtRicerca" id="txtRicerca" value="" placeholder="Ricerca" />
+                                    <button style="float: right; width: 20%" type="submit" id="btnCerca"><i class="fa-solid fa-magnifying-glass"></i></button>
                                 </form>
-                            </li>
-							<hr>
-							<li><a href="/client/register"><i class="fa-brands fa-app-store"></i> Registrazione client</a></li>
-							<li>{{#if user}} 
+								<a href="/client/register"><i class="fa-brands fa-app-store"></i> Registrazione client</a>
+								{{#if user}} 
 									<a href="/logout"><i class="fas fa-right-from-bracket"></i></i> Logout</a>
 								{{else}}
-									<a href="/user/register"><i class="fas fa-right-to-bracket"></i> Registrati</a>
-									<a href="/user/authorize"><i class="fas fa-user"></i> Login</a>
+									<a href="/user/register"><i class="fa-solid fa-user-plus"></i> Registrazione utente</a>
+									<a href="/login"><i class="fa-solid fa-right-to-bracket"></i> Login tramite OAuth</a>
 								{{/if}}
 							</li>
-                            
 						</ul>
 					</nav>
 
@@ -73,7 +70,7 @@
 				<!-- Footer -->
 					<footer id="footer">
 						<div class="inner">
-                            <h2 id="nome">Manuele Dentello | UniMi</h2>
+                            <h2 id="nome">Manuele Dentello | LM-66 Sicurezza Informatica | UniMi</h2>
 						</div>
 					</footer>
 			</div>
