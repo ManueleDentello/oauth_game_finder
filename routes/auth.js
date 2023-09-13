@@ -220,10 +220,6 @@ router.get('/logout', async function (req, res, next) {
   if(!req.session.oauth_token){
     res.render('message', { title: 'Logout', message: 'Devi essere loggato per effettuare il logout', user: userName });
   } else {
-    // delete all data in session and set a blank username
-    userName = '';
-    req.session.destroy();
-
     // Revokes both tokens, refresh token is only revoked if the access_token is properly revoked
     let accessToken = await config.createToken(req.session.oauth_token);
     try {
@@ -233,6 +229,9 @@ router.get('/logout', async function (req, res, next) {
       logger.error('Error revoking token: ', error.message);
   }
 
+  // delete all data in session and set a blank username
+  req.session.destroy();
+  userName = '';
     res.render('message', { title: 'Logout', message: 'Logout effettuato correttamente', user: userName });
   }
 });
