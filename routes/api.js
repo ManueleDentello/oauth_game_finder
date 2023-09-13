@@ -2,8 +2,23 @@ const db = require('../utils/mongodb');
 const express = require('express')
 const igdb = require('../utils/igdb');
 const logger = require('../utils/logger');
-const { route } = require('./auth');
+const authentication = require('../utils/twitch.js');
 const router = express.Router();
+
+var twitchClientID;
+var twitchAccessToken;
+
+/* 
+ * Retrieve twitch_client_id and twitch_access_token from utils/twitch.js
+ */
+async function getTwitchCredentials() {
+    const risultato = await authentication.auth_to_twitch();
+
+    twitchClientID = risultato.clientID;
+    twitchAccessToken = risultato.accessToken;
+};
+getTwitchCredentials();
+
 
 /*
  *  IGDB endpoints
@@ -11,9 +26,6 @@ const router = express.Router();
  *  flow: web link -> web endpoint in app.js -> games_ajax or game_ajax view -> api endpoint (igdb or db) -> query igdb -> HTML render
  */
 router.get('/best', async function (req, res, next) {
-    const twitchClientID = req.session.twitchClientID;
-    const twitchAccessToken = req.session.twitchAccessToken;
-
     let games = await igdb.getBest(twitchClientID, twitchAccessToken);
 
     res.setHeader("Content-Type", "application/json");
@@ -21,8 +33,6 @@ router.get('/best', async function (req, res, next) {
 });
 
 router.get('/popular', async function(req, res, next) {
-    const twitchClientID = req.session.twitchClientID;
-    const twitchAccessToken = req.session.twitchAccessToken;
 
     let games = await igdb.getPopular(twitchClientID, twitchAccessToken);
 
@@ -31,8 +41,6 @@ router.get('/popular', async function(req, res, next) {
 });
 
 router.get('/hype', async function(req, res, next) {
-    const twitchClientID = req.session.twitchClientID;
-    const twitchAccessToken = req.session.twitchAccessToken;
 
     let games = await igdb.getHype(twitchClientID, twitchAccessToken);
 
@@ -42,8 +50,6 @@ router.get('/hype', async function(req, res, next) {
 
 router.get('/favorites', async function(req, res, next) {
     const userName = req.session.userName;
-    const twitchClientID = req.session.twitchClientID;
-    const twitchAccessToken = req.session.twitchAccessToken;
     let favoritesJSON;
 
     let favoritesIDsArray = await db.getFavorites(userName);
@@ -61,8 +67,6 @@ router.get('/favorites', async function(req, res, next) {
 });
 
 router.get('/search', async function(req, res, next) {
-    const twitchClientID = req.session.twitchClientID;
-    const twitchAccessToken = req.session.twitchAccessToken;
     const keywordSearched = req.query.txtRicerca;
 
     let output = await igdb.getSearched(keywordSearched, twitchClientID, twitchAccessToken);
@@ -72,8 +76,6 @@ router.get('/search', async function(req, res, next) {
 });
 
 router.get('/game/:id', async function(req, res, next) {
-    const twitchClientID = req.session.twitchClientID;
-    const twitchAccessToken = req.session.twitchAccessToken;
     const gameID = req.params.id;
 
     let game = await igdb.getGame(gameID, twitchClientID, twitchAccessToken);
