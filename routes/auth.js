@@ -190,6 +190,7 @@ router.get('/username', async (req, res) => {
 */
 router.get('/refresh-token', async (req, res) => {
   let accessToken = await config.createToken(req.session.oauth_token);
+  let userName = req.session.userName;
     
   //if(accessToken.expired(EXPIRATION_WINDOW_IN_SECONDS)) {
     try {
@@ -204,10 +205,8 @@ router.get('/refresh-token', async (req, res) => {
       // Save internally all info coming from the OAuth server
       req.session.oauth_token = result.token;
 
-      logger.info('Token refreshed');
-
-      //res.send('Access token refreshed');
-      next();
+      logger.info('Token refreshed value: ', req.session.oauth_token);
+      res.render('message', { title: 'Flow OAuth', message: 'Token refreshato', user: userName });
     } catch (error) {
       console.error('Error refreshing access token:', error.output);
       res.status(500).send('Error refreshing access token');
