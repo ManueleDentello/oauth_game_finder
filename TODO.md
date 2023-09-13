@@ -25,6 +25,3 @@
 - [x] implementare l'uso di session per l'autenticazione twitch
 
 
-da segnarsi nelle slide
-- utilizzo di session e attributi
-- utilizzo dell'access token
