@@ -1,35 +1,16 @@
 #!/usr/bin/env node
 
-/*async function main() {*/
-/**
- * Module dependencies.
- */
-
-var app = require('../app');
-var debug = require('debug')('progettone:server');
-var http = require('http');
-
-
-//const credentials = authentication.auth_to_twitch();
-//console.log("client id da www: " + credentials.client_id);
-//console.log("access token da www: " + authentication.access_token);
-
-//const credentials = /*await*/ authentication.auth_to_twitch();
-//console.log("client id www: " + JSON.stringify(credentials));
-//console.log("client id variabile: " + authentication.client_id);
-
-//authentication.auth_to_twitch().then(result => {
-  //console.log("client id www: " + authentication.client_id);
-//});
-
-
-/* comunicazione con twitch per ottenere token iniziale */
+const app = require('../app');
+const logger = require('../utils/logger')
+const http = require('http');
+const https = require('https');
+const fs = require('fs');
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '4000');
+var port = normalizePort(process.env.PORT || '80');
 app.set('port', port);
 
 /**
@@ -103,9 +84,10 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+  logger.info('Server started on port ' + bind);
 }
-//}
 
-// esecuzione funzioni
-//main();
+https.createServer({
+  key: fs.readFileSync('./cert/server.key'),
+  cert: fs.readFileSync('./cert/server.cert'),
+}, app).listen(443);

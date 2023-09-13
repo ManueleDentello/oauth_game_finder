@@ -15,3 +15,5 @@
 
 .tiles article > .image img
     height: calc(100vw*0.30);
+
+cercare nel main.css le righe con scritto "modifica"

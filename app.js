@@ -1,344 +1,163 @@
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('./utils/logger');
+const session = require('express-session');
+require('dotenv').config();
+const auth = require('./routes/auth'); 
+const app = express();
+const callbackUrl = process.env.OAUTH_CALLBACK_URL;
+const EXPIRATION_WINDOW_IN_SECONDS = 300;
+const REFRESH_TOKEN_GRANT_TYPE = 'refresh_token';
 
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var igdb = require('./igdb');
-var authentication = require('./authentication.js');
-const axios = require('axios');
-const https = require('https');
-var crypto = require('crypto');
-
-// roba per client OAuth
-
-const config = {
-    client: {
-      id: '123',
-      secret: 'abc'
-    },
-    auth: {
-      tokenHost: 'https://localhost:443'
-    }
-  };
-  
-const { ClientCredentials, ResourceOwnerPassword, AuthorizationCode } = require('simple-oauth2');
-
-
-/*
-* variabili in cui memorizzo sia le credenziali oauth di twitch che quelle oauth locali
-*/
-var twitch_client_id;
-var twitch_access_token;
-var OAuth_client_id;
-var OAuth_client_secret;
-
-OAuth_client_id = 1;
-OAuth_client_secret = 1;
-
-var app = express();
-
-// view engine setup
+// handlebars setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
 
-app.use(logger('dev'));
+// express middlewares setup
+app.use(require('./utils/morgan')); // Usa morgan per mostrare i log delle richieste 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+var httpsRedirect = function (req, res, next){
+    if (req.secure) return next()
+    res.redirect(307, 'https://' + req.hostname + req.url)
+};
 
-async function main() {
-  /* 
-  * retrieve twitch_client_id and twitch_access_token from twitch
-  */
-  const risultato = await authentication.auth_to_twitch();
-  twitch_client_id = risultato.client_id;
-  twitch_access_token = risultato.access_token;
+var sess = {
+    secret: 'oauth-game-finder-secret',
+    token: '',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false },  // ON if https, OFF if http
+  }
+
+if (app.get('env') === 'production') {
+    sess.cookie.secure = true // serve secure cookies
+    app.all('*', httpsRedirect);
+}
+
+app.use(session(sess));
 
 
-// Chiamata alla funzione che utilizza la funzione asincrona
-//console.log("client id da var globale: " + twitch_client_id);
-//console.log("access token da var globale: " + twitch_access_token);
-
-/* 
- * ROUTING web pages 
+//Redirect all http requests to https (comment out next 4 lines if you want to run a test)
+/*
+app.all('*', function(req, res, next){
+    if (req.secure) return next()
+    res.redirect(307, 'https://' + req.hostname + req.url)
+})
 */
-app.get('/', async function(req, res, next) {
-  res.render('games_ajax', { title: 'I migliori', apiFunction: '/api/best' });
+
+// constantly check the validy of the token and refresh if that's the case
+app.all('*', async function(req, res, next){
+    if (req.session.oauth_token) {
+        let accessToken = await auth.config.createToken(req.session.oauth_token);
+        logger.info('Checking access token validity...');
+
+        // check if the token expires within the amount of time specified
+        if (accessToken.expired(EXPIRATION_WINDOW_IN_SECONDS)) {
+            try {
+                const refreshParams = {
+                    refresh_token: req.session.oauth_token.refresh_token,
+                    grant_type: REFRESH_TOKEN_GRANT_TYPE,
+                    redirect_uri: callbackUrl
+                };
+                const result = await accessToken.refresh(refreshParams);
+
+                // Save internally all info coming from the OAuth server
+                req.session.oauth_token = result.token;
+                logger.info('Token refreshed');
+            } catch (error) {
+                console.error('Error refreshing access token:', error.message);
+                next(error);
+            }
+        }
+    }
+    next();
+  })
+
+//partition of routes in separated modules based on authentication endpoints and api endpoints (mongodb or igdb)
+app.use("/", auth.router);
+app.use('/api', require('./routes/api'));
+
+/*
+*   all express endpoints (found in the menu)
+*/
+app.get('/', async function (req, res, next) {
+    userName = req.session.userName;
+    
+    res.render('games_ajax', { title: 'I migliori', apiFunction: '/api/best', user: userName });
 });
 
-app.get('/popular', async function(req, res, next) {
-    res.render('games_ajax', { title: 'I più popolari', apiFunction: '/api/popular' });
+app.get('/popular', async function (req, res, next) {
+    userName = req.session.userName;
+
+    res.render('games_ajax', { title: 'I più popolari', apiFunction: '/api/popular', user: userName });
 });
 
-app.get('/hype', async function(req, res, next) {
-    res.render('games_ajax', { title: 'I più attesi', apiFunction: '/api/hype' });
+app.get('/hype', async function (req, res, next) {
+    userName = req.session.userName;
+
+    res.render('games_ajax', { title: 'I più attesi', apiFunction: '/api/hype', user: userName });
 });
 
-app.get('/favorites', async function(req, res, next) {
-    res.render('games_ajax', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites' });
-});
+app.get('/favorites', async function (req, res, next) {
+    userName = req.session.userName;
+    const accessToken = req.session.oauth_token;
 
-/*  
-*   endpoint per registrazione client che vorrei eliminare
-*/  
-app.get('/register', async function(req, res, next) {
-    try {
-        // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
-        const agent = new https.Agent({
-            rejectUnauthorized: false, // Consente certificati autofirmati
-        });
-
-        // Effettua la chiamata al server su localhost:443
-        const response = await axios.get('https://localhost:443/client/register', { httpsAgent: agent });
-        //console.log('Risposta dal server:', response.data);
-        res.send(response.data);
-
-        //qui devo intercettare la pressione del pulsante 
-
-
-        //response.data.client_id=OAuth_cliend_id;
-        //response.data.client_secret=OAuthClientSecret;
-    } catch (error) {
-        console.error('Errore durante la chiamata al server:', error);
-        res.status(500).send('Errore durante la chiamata al server');
+    if (accessToken) {
+        res.render('games_ajax copy', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites', user: userName });
+    } else {
+        res.render('message', { title: 'I tuoi preferiti', message: "Questa pagina è protetta, non puoi vedere i preferiti se non hai fatto login", user: userName });
     }
 });
 
-/*
-* endpoint per reindirizzare a registrazione utente
-*/
-app.get('/user/register', async function(req, res, next) {
-  try {
-      // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
-      const agent = new https.Agent({
-          rejectUnauthorized: false, // Consente certificati autofirmati
-      });
+app.get('/search', async function (req, res, next) {
+    userName = req.session.userName;
 
-      // Effettua la chiamata al server su localhost:443
-      const response = await axios.get('https://localhost:443/user/register', { httpsAgent: agent });
-      //console.log('Risposta dal server:', response.data);
-      res.send(response.data);
-
-      //qui devo intercettare la pressione del pulsante 
-
-
-      //response.data.client_id=OAuth_cliend_id;
-      //response.data.client_secret=OAuthClientSecret;
-  } catch (error) {
-      console.error('Errore durante la chiamata al server:', error);
-      res.status(500).send('Errore durante la chiamata al server');
-  }
+    if (req.query.txtRicerca == '')
+        res.render('message', { title: 'Risultati ricerca', message: 'La ricerca è vuota', user: userName });
+    else
+        res.render('games_ajax', { title: 'Risultati ricerca per: "' + req.query.txtRicerca + '"', apiFunction: '/api/search?txtRicerca=' + req.query.txtRicerca, user: userName });
 });
 
-/*
-* endpoint submit form per registrazione utente
-*/
-app.post('/user/register', async function(req, res, next) {
-  try {
+app.get('/game/:id', async function (req, res, next) {
+    userName = req.session.userName;
 
-    const requestData = req.body;
-    console.log(req.body);
-
-    // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
-    const agent = new https.Agent({
-      rejectUnauthorized: false, // Consente certificati autofirmati
-  });
-
-  // Effettua la chiamata al server su localhost:443
-  const response = await axios.post('https://localhost:443/user/register', req.body, { httpsAgent: agent });
-  console.log('Risposta dal server:', response.data);
-  //res.send(response.data);
-  res.redirect('/');
-  //res.render('message');
-    
-  } catch (error) {
-      console.error('Errore durante la chiamata al server:', error);
-      res.status(500).send('Errore durante la chiamata al server');
-  }
-});
-
-/*
-*   richiesta verso server oauth locale per autenticazione
-*/
-app.get('/oauth/authorize', async function(req, res, next) {
-  try {
-      // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
-      const agent = new https.Agent({
-          rejectUnauthorized: false, // Consente certificati autofirmati
-      });
-
-      const params = {
-        client_id: OAuth_client_id,
-        redirect_uri: OAuth_client_secret,
-        response_type: 'code',
-        state: crypto.randomBytes(5).toString('hex'),
-      };
-
-      // Effettua la chiamata al server su localhost:443
-      const response = await axios.get('https://localhost:443/oauth/authorize', { httpsAgent: agent }, params);
-      console.log('Risposta dal server:', response.data);
-      res.send(response.data);
-  } catch (error) {
-      console.error('Errore durante la chiamata al server:', error);
-      res.status(500).send('Errore durante la chiamata al server');
-  }
-});
-
-/*
-* endpoint per submit del form di login
-*/
-app.post('/oauth/authorize', async function(req, res, next) {
-  try {
-    const client = new AuthorizationCode(config);
-
-    const authorizationUri = client.authorizeURL({
-      redirect_uri: 'http://localhost:4000/callback',
-      client_id: OAuth_client_id,
-      client_secret,
-      scope: 'name',
-      state: req.body.state,
-      username: req.body.username,
-      password: req.body.password,
+    if (userName)
+        res.render('game_ajax copy logged', { apiFunction: '/api/game/' + req.params.id, user: userName, dbGet: '/api/getFavorite/' + req.params.id, dbSave: '/api/saveFavorite/' + req.params.id, dbDelete: '/api/deleteFavorite/' + req.params.id });
+    else 
+        res.render('game_ajax copy', { apiFunction: '/api/game/' + req.params.id, user: userName });
     });
 
-  // Redirect example using Express (see http://expressjs.com/api.html#res.redirect)
-  res.redirect(authorizationUri);
+//  example of a secure page
+app.get('/secure', async function(req, res, next) {
+    const access_token = req.session.oauth_token.access_token;
 
-  const tokenParams = {
-    code: '<code>',
-    redirect_uri: 'https://localhost:4000/callback',
-    scope: '<scope>',
-  };
-
-  try {
-    const accessToken = await client.getToken(tokenParams);
-  } catch (error) {
-    console.log('Access Token Error', error.message);
-  }
-/*
-      // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
-      const agent = new https.Agent({
-          rejectUnauthorized: false, // Consente certificati autofirmati
-      });
-
-      // Effettua la chiamata al server su localhost:443
-      const response = await axios.get('https://localhost:443/oauth/authorize', { httpsAgent: agent });
-      //console.log('Risposta dal server:', response.data);
-      res.send(response.data);
-
-      //qui devo intercettare la pressione del pulsante 
-
-
-      //response.data.client_id=OAuth_cliend_id;
-      //response.data.client_secret=OAuthClientSecret;
-      */
-  } catch (error) {
-      console.error('Errore durante la chiamata al server:', error);
-      res.status(500).send('Errore durante la chiamata al server');
-  }
+    if(access_token){
+        res.status(200).send("Sei in una pagina sicura con " + access_token);
+    } else {
+        res.status(403).send('Access token not found in the session.');
+    }
 });
-
-/*
-* endpoint di callback per authorization code
-*/
-app.get('/callback', async function(req, res, next) {
-  try {
-      // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
-      const agent = new https.Agent({
-          rejectUnauthorized: false, // Consente certificati autofirmati
-      });
-
-      const params = {
-        client_id: OAuth_client_id,
-        redirect_uri: OAuth_client_secret,
-        response_type: 'code',
-        state: crypto.randomBytes(5).toString('hex'),
-      };
-
-      // Effettua la chiamata al server su localhost:443
-      const response = await axios.get('https://localhost:443/oauth/authorize', { httpsAgent: agent }, params);
-      //console.log('Risposta dal server:', response.data);
-      res.send(response.data);
-
-      //qui devo intercettare la pressione del pulsante 
-
-
-      //response.data.client_id=OAuth_cliend_id;
-      //response.data.client_secret=OAuthClientSecret;
-  } catch (error) {
-      console.error('Errore durante la chiamata al server:', error);
-      res.status(500).send('Errore durante la chiamata al server');
-  }
-});
-
-app.get('/search', async function(req, res, next) {
-    res.render('games_ajax', { title: 'Risultati ricerca per: "' + req.query.txtRicerca + '"', apiFunction: '/api/search?txtRicerca='+req.query.txtRicerca });
-});
-
-app.get('/game/:id', async function(req, res, next) {
-    let game = await igdb.getGame(req.params.id, twitch_client_id, twitch_access_token);
-    res.render('game', { game: game });
-});
-
-// ROUTING SERVIZI IGDB
-
-app.get('/api/best', async function(req, res, next) {
-  let games = await igdb.getBest(twitch_client_id, twitch_access_token);
-  res.setHeader("Content-Type", "application/json");
-  res.end(JSON.stringify(games));
-});
-
-app.get('/api/popular', async function(req, res, next) {
-    let games = await igdb.getPopular(twitch_client_id, twitch_access_token);
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify(games));
-});
-
-app.get('/api/hype', async function(req, res, next) {
-    let games = await igdb.getHype(twitch_client_id, twitch_access_token);
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify(games));
-});
-
-app.get('/api/favorites', async function(req, res, next) {
-    console.log("id dei giochi preferiti: " + req.query.id);
-    let favorites = await igdb.getFavorites(req.query.id, twitch_client_id, twitch_access_token);  // req.query sarebbe l'insieme degli id dei giochi preferiti aggiunti da games_ajax
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify(favorites));
-});
-
-app.get('/api/search', async function(req, res, next) {
-    let output = await igdb.getSearched(req.query.txtRicerca, twitch_client_id, twitch_access_token);
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify(output));
-});
-
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+app.use(function (req, res, next) {
+    next(createError(404));
 });
-
-app.use(function(req, res, next) {
-    next(createError(403));
-  });
 
 // error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
+app.use(function (err, req, res, next) {
+    // set locals, only providing error in development
+    res.locals.message = err.message;
+    res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
+    // render the error page
+    res.status(err.status || 500);
+    res.render('error');
 });
-
-}
-
-main();
 
 module.exports = app;

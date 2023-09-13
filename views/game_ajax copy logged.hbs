@@ -1,0 +1,121 @@
+{{!-- a void div or section is needed for jquery to append html code --}}
+<div id="gameData"></div>
+
+<script type="text/javascript">
+
+    function changeFavoriteStatus() {
+        /*  
+         *  favorite button logic
+         *  2 jquery calls in order to save or delete the game as a favorite, showing the status on the button
+         */
+        if ($("#favBut").text() == 'NON PREFERITO') {
+            $.getJSON("{{{dbSave}}}").done(function (result) {
+            if (result.saved) {
+                $("#favBut").text("PREFERITO").addClass("primary");
+                console.log('Game saved as favorite');
+            }
+        }).fail(function () {
+            alert("Error on the query {{{dbSave}}}");
+        });
+        } else {
+            $.getJSON("{{{dbDelete}}}").done(function (result) {
+            if (result.deleted) {
+                $("#favBut").text("NON PREFERITO").removeClass("primary");  // it does 2 things at the same time (text and remove css class)
+                console.log('Game deleted as favorite');
+            }
+            }).fail(function () {
+                alert("Error on the query {{{dbDelete}}}");
+            });
+        }
+    }
+
+    window.onload = function () {
+        // jquery call to api endpoint /game:id that will immediately query external db (igdb)
+        $.getJSON("{{{apiFunction}}}").done(function (game) {   // this is the jquery call that queries all favorite games
+            // getting all HTML and data into one variable, then use the jquery append function
+            var gameHTML = '';
+            /*  
+             *  using single quotes to avoid escaping the double quotes of HTML
+             *  also using \ at the end of the row in order to reduce the number
+             *  of single quotes necessary to create a multi-row string
+             */
+
+             //commentato display:none
+            gameHTML = gameHTML + 
+                '<button style="float:right;" class="button icon solid fa-star" id="favBut" onclick="changeFavoriteStatus()">NON PREFERITO</button>\n\
+                <h1>' + game.name + '</h1>\n';
+                
+            // if video exists it will be showed
+            if (game.videos) {
+                gameHTML = gameHTML + 
+                    '<iframe style="width:100%; height: 60vw; max-height: 70vh;" src="https://www.youtube.com/embed/' + game.videos +
+                    '?controls=0&autoplay=1&mute=1" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n';
+            }
+            
+            gameHTML = gameHTML +
+                '<div id="container">\n\
+                    <div id="sinistra">\n\
+                        <h2><i class="fas fa-file-alt"></i>DESCRIZIONE</h2>\n\
+                        <p>' + game.summary + '</p>\n\
+                    </div>\n\
+                    <div id="destra">\n\
+                        <h2><i class="fas fa-dice"></i>GENERE</h2>\n';
+            
+            if (game.genres)
+                gameHTML = gameHTML + '<p>' + game.genres + '</p>\n';
+            else 
+                gameHTML = gameHTML + '\n';
+
+            gameHTML = gameHTML + '<h2><i class="fas fa-desktop"></i>PIATTAFORME</h2>\n';
+    
+            if (game.platforms)
+                gameHTML = gameHTML + '<p>' + game.platforms + '</p>\n';
+            else
+                gameHTML = gameHTML + '\n';     
+    
+            gameHTML = gameHTML + '<h2><i class="fas fa-calendar-times"></i>DATA DI USCITA</h2>\n';
+            if (game.release_dates)
+                gameHTML = gameHTML + '<p>' + game.release_dates + '</p>\n';
+            else 
+                gameHTML = gameHTML + '\n';
+
+            gameHTML = gameHTML + '<h2><i class="fas fa-code"></i>SVILUPPATORE</h2>\n';
+            if (game.involved_companies)
+                gameHTML = gameHTML + '<p>' + game.involved_companies + '</p>\n';
+            else 
+                gameHTML = gameHTML + '\n';
+
+            gameHTML = gameHTML + '<h2><i class="fas fa-network-wired"></i>SITO UFFICIALE</h2>\n';
+            if (game.websites)
+                gameHTML = gameHTML + '<a href="' + game.websites + '">' + game.websites + '</a>\n';
+            else 
+                gameHTML = gameHTML + '\n';
+
+            gameHTML= gameHTML + 
+                    '</div>\n\
+                </div>\n';
+            
+            //  finally, append the created HTML in the initial div
+            $("#gameData").append(gameHTML);
+
+
+            //  Another jquery call to db to know if the game is a favorite for the user
+            $.getJSON("{{{dbGet}}}").done(function (result) {
+                console.log(result.favorite);
+                if (result.favorite) {
+                    $("#favBut").text("PREFERITO").addClass("primary");
+                    console.log("è un preferito");
+                    $(window).fav
+                    $("#favBut").show();
+                }
+                //console.log("qui ci passo");
+
+                }).fail(function () {
+                    alert("Error on the query {{dbGet}}");
+                });
+
+        }).fail(function () {
+            alert("Error on the query {{apiFunction}}");
+        });
+    }
+</script>
