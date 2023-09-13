@@ -4,7 +4,6 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('./utils/logger');
 const session = require('express-session');
-const authentication = require('./utils/twitch.js');
 require('dotenv').config();
 const auth = require('./routes/auth'); 
 const app = express();
@@ -22,24 +21,27 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({
+
+var httpsRedirect = function (req, res, next){
+    if (req.secure) return next()
+    res.redirect(307, 'https://' + req.hostname + req.url)
+};
+
+var sess = {
     secret: 'oauth-game-finder-secret',
     token: '',
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false },  // ON if https, OFF if http
-    // httpOnly is on by default
-  }))
+  }
 
- //function to connect or stay connected to the twitch OAuth server in order to be able to retrieve data from igdb
-app.use(async function (req, res, next) {
-    if (!req.session.twitchClientID || !req.session.twitchAccessToken) {
-        const credentials = await authentication.auth_to_twitch();
-        req.session.twitchClientID = credentials.clientID;
-        req.session.twitchAccessToken = credentials.accessToken;
-    }
-    next();
-  });
+if (app.get('env') === 'production') {
+    sess.cookie.secure = true // serve secure cookies
+    app.all('*', httpsRedirect);
+}
+
+app.use(session(sess));
+
 
 //Redirect all http requests to https (comment out next 4 lines if you want to run a test)
 /*
