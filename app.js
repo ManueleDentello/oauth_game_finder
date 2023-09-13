@@ -55,7 +55,6 @@ app.all('*', async function(req, res, next){
         let accessToken = await auth.config.createToken(req.session.oauth_token);
         logger.info('Checking access token validity...');
 
-        /*
         // check if the token expires within the amount of time specified
         if (accessToken.expired(EXPIRATION_WINDOW_IN_SECONDS)) {
             try {
@@ -74,8 +73,6 @@ app.all('*', async function(req, res, next){
                 next(error);
             }
         }
-        */
-        res.redirect('/refresh-token');
     }
     next();
   })
