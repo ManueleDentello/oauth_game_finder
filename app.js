@@ -89,19 +89,19 @@ app.use('/api', require('./routes/api'));
 app.get('/', async function (req, res, next) {
     userName = req.session.userName;
     
-    res.render('games_ajax', { title: 'I migliori', apiFunction: '/api/best', user: userName });
+    res.render('game_tiles', { title: 'I migliori', apiFunction: '/api/best', user: userName });
 });
 
 app.get('/popular', async function (req, res, next) {
     userName = req.session.userName;
 
-    res.render('games_ajax', { title: 'I più popolari', apiFunction: '/api/popular', user: userName });
+    res.render('game_tiles', { title: 'I più popolari', apiFunction: '/api/popular', user: userName });
 });
 
 app.get('/hype', async function (req, res, next) {
     userName = req.session.userName;
 
-    res.render('games_ajax', { title: 'I più attesi', apiFunction: '/api/hype', user: userName });
+    res.render('game_tiles', { title: 'I più attesi', apiFunction: '/api/hype', user: userName });
 });
 
 app.get('/favorites', async function (req, res, next) {
@@ -109,7 +109,7 @@ app.get('/favorites', async function (req, res, next) {
     const accessToken = req.session.oauth_token;
 
     if (accessToken) {
-        res.render('games_ajax copy', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites', user: userName });
+        res.render('game_tiles', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites', user: userName });
     } else {
         res.render('message', { title: 'I tuoi preferiti', message: "Questa pagina è protetta, non puoi vedere i preferiti se non hai fatto login", user: userName });
     }
@@ -121,16 +121,16 @@ app.get('/search', async function (req, res, next) {
     if (req.query.txtRicerca == '')
         res.render('message', { title: 'Risultati ricerca', message: 'La ricerca è vuota', user: userName });
     else
-        res.render('games_ajax', { title: 'Risultati ricerca per: "' + req.query.txtRicerca + '"', apiFunction: '/api/search?txtRicerca=' + req.query.txtRicerca, user: userName });
+        res.render('game_tiles', { title: 'Risultati ricerca per: "' + req.query.txtRicerca + '"', apiFunction: '/api/search?txtRicerca=' + req.query.txtRicerca, user: userName });
 });
 
 app.get('/game/:id', async function (req, res, next) {
     userName = req.session.userName;
 
     if (userName)
-        res.render('game_ajax copy logged', { apiFunction: '/api/game/' + req.params.id, user: userName, dbGet: '/api/getFavorite/' + req.params.id, dbSave: '/api/saveFavorite/' + req.params.id, dbDelete: '/api/deleteFavorite/' + req.params.id });
+        res.render('game_details_logged', { apiFunction: '/api/game/' + req.params.id, user: userName, dbGet: '/api/getFavorite/' + req.params.id, dbSave: '/api/saveFavorite/' + req.params.id, dbDelete: '/api/deleteFavorite/' + req.params.id });
     else 
-        res.render('game_ajax copy', { apiFunction: '/api/game/' + req.params.id, user: userName });
+        res.render('game_details_guest', { apiFunction: '/api/game/' + req.params.id, user: userName });
     });
 
 //  example of a secure page
