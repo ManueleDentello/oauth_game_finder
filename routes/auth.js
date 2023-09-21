@@ -225,12 +225,14 @@ router.get('/logout', async function (req, res, next) {
   } else {
     // Revokes both tokens, refresh token is only revoked if the access_token is properly revoked
     let accessToken = await config.createToken(req.session.oauth_token);
+    /*
     try {
       await accessToken.revokeAll();
       logger.info('Access token and refresh token revoked');
     } catch (error) {
-      //logger.error('Error revoking token: ', error.message);
-  }
+      logger.error('Error revoking token: ', error.message);
+    }
+  */
 
   // delete all data in session and set a blank username
   req.session.destroy();
