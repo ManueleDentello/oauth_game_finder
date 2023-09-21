@@ -44,7 +44,7 @@
 								<a href="/"><i class="fas fa-medal"></i> I migliori</a>
                             	<a href="/popular"><i class="fas fa-fire"></i> I più popolari</a>
                             	<a href="/hype"><i class="fa-regular fa-calendar-days"></i> I più attesi</a>
-                            	<a href="/favorites"><i class="fas fa-star"></i> I tuoi preferiti</a>
+                            	{{#if user}} <a href="/favorites"><i class="fas fa-star"></i> I tuoi preferiti</a> {{/if}}
                                 <form action="/search">
                                     <input style="float: left; width: 80%" type="text" name="txtRicerca" id="txtRicerca" value="" placeholder="Ricerca" />
                                     <button style="float: right; width: 20%" type="submit" id="btnCerca"><i class="fa-solid fa-magnifying-glass"></i></button>
