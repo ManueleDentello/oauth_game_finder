@@ -13,7 +13,7 @@
          */
         $.getJSON("{{{apiFunction}}}")  // 3 braces are for HTML escaping   
             .done(function (games) {
-                if (games.length == 0) { //verificare che risultato dà se non ci sono preferiti
+                if (games.length == 0) {
                     // notify user of no games found
                     $('#gamesTiles').append('\
                         <article class="style1">\n\
