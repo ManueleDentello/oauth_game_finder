@@ -1,7 +1,5 @@
-var apicalypse = require('apicalypse').default;
-const logger = require('./logger');
-
-const LIMITE = 18;
+let apicalypse = require('apicalypse').default;
+const LIMIT = 18;
 const IGDB_GAMES = "https://api.igdb.com/v4/games";
 const IGDB_GAME_VIDEOS = "https://api.igdb.com/v4/game_videos";
 const IGDB_GENRES = "https://api.igdb.com/v4/genres";
@@ -18,17 +16,17 @@ let coversCache = {};
 /*
  *  main functions
  */
-async function getBest(client_id, access_token){
+async function getBest(clientID, accessToken){
     const games = await apicalypse({
         queryMethod: 'body',
         method: 'post',
         headers: {
-            'Client-ID': client_id,
-            'Authorization': 'Bearer ' + access_token
+            'Client-ID': clientID,
+            'Authorization': 'Bearer ' + accessToken
         }
     })
         .fields('name,genres.name,cover.url')
-        .limit(LIMITE)
+        .limit(LIMIT)
         .sort('rating', 'desc')
         .where('name != null & genres != null & cover != null & rating_count >= 100 & aggregated_rating_count > 5 & rating != null')
         .request(IGDB_GAMES); // execute the query and return a response object
@@ -37,17 +35,17 @@ async function getBest(client_id, access_token){
     return games.data;
 }
 
-async function getPopular(client_id, access_token){
+async function getPopular(clientID, accessToken){
     const games = await apicalypse({
         queryMethod: 'body',
         method: 'post',
         headers: {
-            'Client-ID': client_id,
-            'Authorization': 'Bearer ' + access_token
+            'Client-ID': clientID,
+            'Authorization': 'Bearer ' + accessToken
         }
     })
         .fields('name,genres.name,cover.url')
-        .limit(LIMITE)
+        .limit(LIMIT)
         .sort('total_rating_count', 'desc')    //pulse_count previously used, not supported anymore
         .where('name != null & genres != null & cover != null & total_rating_count != null')
         .request(IGDB_GAMES); // execute the query and return a response object
@@ -56,19 +54,19 @@ async function getPopular(client_id, access_token){
     return games.data;
 }
 
-async function getHype(client_id, access_token){
+async function getHype(clientID, accessToken){
     let oggi = DateToUNIX(new Date());
 
     const games = await apicalypse({
         queryMethod: 'body',
         method: 'post',
         headers: {
-            'Client-ID': client_id,
-            'Authorization': 'Bearer ' + access_token
+            'Client-ID': clientID,
+            'Authorization': 'Bearer ' + accessToken
         }
     })
         .fields('name,cover.url,genres.name')
-        .limit(LIMITE)
+        .limit(LIMIT)
         .sort('follows', 'desc')          //hypes
         .sort('release_dates.date', 'asc')
         .where('name != null & genres != null & cover != null & release_dates.date != null & follows != null & release_dates.date > ' + oggi)
@@ -78,34 +76,33 @@ async function getHype(client_id, access_token){
     return games.data;
 }
 
-async function getFavorites(ids, client_id, access_token){
+async function getFavorites(ids, clientID, accessToken){
     const games = await apicalypse({
         queryMethod: 'body',
         method: 'post',
         headers: {
-            'Client-ID': client_id,
-            'Authorization': 'Bearer ' + access_token
+            'Client-ID': clientID,
+            'Authorization': 'Bearer ' + accessToken
         }
     })
         .fields('name,genres.name,cover.url')
         .where('id = (' + ids + ')') // multiple ids may be present
         .request(IGDB_GAMES); // execute the query and return a response object
-    console.log(games.data);
     prepareTiles(games); 
     return games.data;
 }
 
-async function getSearched(name, client_id, access_token){
+async function getSearched(name, clientID, accessToken){
     const games = await apicalypse({
         queryMethod: 'body',
         method: 'post',
         headers: {
-            'Client-ID': client_id,
-            'Authorization': 'Bearer ' + access_token
+            'Client-ID': clientID,
+            'Authorization': 'Bearer ' + accessToken
         }
     })
     .fields('name,genres.name,cover.url')
-    .limit(LIMITE)
+    .limit(LIMIT)
     .sort('follows', 'desc')        //usava pulse_count
     //.search(name)
     .where('name != null & genres != null & cover != null & follows != null & name ~ *"' + name + '"*')
@@ -115,13 +112,13 @@ async function getSearched(name, client_id, access_token){
     return games.data;
 }
 
-async function getGame(id, client_id, access_token){
+async function getGame(id, clientID, accessToken){
     const game = await apicalypse({
         queryMethod: 'body',
         method: 'post',
         headers: {
-            'Client-ID': client_id,
-            'Authorization': 'Bearer ' + access_token
+            'Client-ID': clientID,
+            'Authorization': 'Bearer ' + accessToken
         }
     })
         .fields('name,videos.video_id,summary,genres.name,release_dates.date,platforms.name,involved_companies.company.name,websites.url')
