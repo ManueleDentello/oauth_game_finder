@@ -87,6 +87,7 @@ function onListening() {
   logger.info('Server started on port ' + bind);
 }
 
+/* HTTPS support */
 https.createServer({
   key: fs.readFileSync('./cert/server.key'),
   cert: fs.readFileSync('./cert/server.cert'),
