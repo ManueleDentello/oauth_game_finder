@@ -22,12 +22,14 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-var httpsRedirect = function (req, res, next){
+// HTTPS support
+let httpsRedirect = function (req, res, next){
     if (req.secure) return next()
     res.redirect(307, 'https://' + req.hostname + req.url)
 };
 
-var sess = {
+// express-session setup
+let sess = {
     secret: 'oauth-game-finder-secret',
     token: '',
     resave: false,
@@ -42,7 +44,7 @@ if (app.get('env') === 'production') {
 
 app.use(session(sess));
 
-
+// THIS SHOULD NOT BE RELEVANT
 //Redirect all http requests to https (comment out next 4 lines if you want to run a test)
 /*
 app.all('*', function(req, res, next){
@@ -53,6 +55,7 @@ app.all('*', function(req, res, next){
 
 // constantly check the validy of the token and refresh if that's the case
 app.all('*', async function(req, res, next){
+    // only if there's already an access token
     if (req.session.oauth_token) {
         let accessToken = await auth.config.createToken(req.session.oauth_token);
         logger.info('Checking access token validity...');
@@ -67,7 +70,7 @@ app.all('*', async function(req, res, next){
                 };
                 const result = await accessToken.refresh(refreshParams);
 
-                // Save internally all info coming from the OAuth server
+                // Save the result in the session
                 req.session.oauth_token = result.token;
                 logger.info('Token refreshed');
             } catch (error) {
@@ -87,36 +90,32 @@ app.use('/api', require('./routes/api'));
 *   all express endpoints (found in the menu)
 */
 app.get('/', async function (req, res, next) {
-    userName = req.session.userName;
-    
+    const userName = req.session.userName;
     res.render('game_tiles', { title: 'I migliori', apiFunction: '/api/best', user: userName });
 });
 
 app.get('/popular', async function (req, res, next) {
-    userName = req.session.userName;
-
+    const userName = req.session.userName;
     res.render('game_tiles', { title: 'I più popolari', apiFunction: '/api/popular', user: userName });
 });
 
 app.get('/hype', async function (req, res, next) {
-    userName = req.session.userName;
-
+    const userName = req.session.userName;
     res.render('game_tiles', { title: 'I più attesi', apiFunction: '/api/hype', user: userName });
 });
 
 app.get('/favorites', async function (req, res, next) {
-    userName = req.session.userName;
+    const userName = req.session.userName;
     const accessToken = req.session.oauth_token;
 
-    if (accessToken) {
+    if (accessToken)
         res.render('game_tiles', { title: 'I tuoi giochi preferiti', apiFunction: '/api/favorites', user: userName });
-    } else {
-        res.render('message', { title: 'I tuoi preferiti', message: "Questa pagina è protetta, non puoi vedere i preferiti se non hai fatto login", user: userName });
-    }
+    else
+        res.render('message', { title: 'I tuoi preferiti', message: "Non puoi vedere i preferiti se non sei autenticato", user: userName });
 });
 
 app.get('/search', async function (req, res, next) {
-    userName = req.session.userName;
+    const userName = req.session.userName;
 
     if (req.query.txtRicerca == '')
         res.render('message', { title: 'Risultati ricerca', message: 'La ricerca è vuota', user: userName });
@@ -125,7 +124,7 @@ app.get('/search', async function (req, res, next) {
 });
 
 app.get('/game/:id', async function (req, res, next) {
-    userName = req.session.userName;
+    const userName = req.session.userName;
 
     if (userName)
         res.render('game_details_logged', { apiFunction: '/api/game/' + req.params.id, user: userName, dbGet: '/api/getFavorite/' + req.params.id, dbSave: '/api/saveFavorite/' + req.params.id, dbDelete: '/api/deleteFavorite/' + req.params.id });
@@ -133,7 +132,7 @@ app.get('/game/:id', async function (req, res, next) {
         res.render('game_details_guest', { apiFunction: '/api/game/' + req.params.id, user: userName });
     });
 
-//  example of a secure page
+//  example of a secure page that prints access_token
 app.get('/secure', async function(req, res, next) {
     const access_token = req.session.oauth_token.access_token;
 
