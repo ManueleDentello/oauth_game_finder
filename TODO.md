@@ -3,8 +3,8 @@
 ### Todo
 
 ### In Progress
-- [ ] eliminare view vecchie (favorites_ajax_old, game, games, secure, i doppioni)
-- [ ] segnarsi come far partire l'applicazione da zero (server oauth, server web e db), soprattutto parte dei session e https
+
+- [ ] compilare readme.md
 
 ### Done ✓
 - [x] endpoint registrazione client e user
@@ -19,5 +19,6 @@
 - [x] implementare l'uso di session per l'autenticazione twitch
 - [x] eliminare le sessioni e i token al logout (verificare se sul server sono state implementate)
 - [x] reindirizzare tutte le chiamate http in https (vedi commenti)
+- [x] eliminare view vecchie (favorites_ajax_old, game, games, secure, i doppioni)
 
 
