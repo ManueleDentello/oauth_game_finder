@@ -1,16 +1,10 @@
 const axios = require('axios');
 const logger = require('./logger');
-
 const GRANT_TYPE = "client_credentials";
-let access_token;
-let client_id;
-let credentials;
+let igdb_client_id = process.env.IGDB_CLIENT_ID
+let igdb_client_secret = process.env.IGDB_CLIENT_SECRET
 
 async function auth_to_twitch() {
-  
-  igdb_client_id = process.env.IGDB_CLIENT_ID
-  igdb_client_secret = process.env.IGDB_CLIENT_SECRET
-
   try {
     // Set the URL for the HTTP request
     const url = 'https://id.twitch.tv/oauth2/token';
@@ -25,13 +19,9 @@ async function auth_to_twitch() {
     const response = await axios.post(url, data);
 
     // Handle the response data
-    logger.debug('Twitch authentication response data:', response.data);
+    logger.info('Twitch authentication response data:' + JSON.stringify(response.data));
 
-    // mi salvo i dati dal json di risposta che mi servono per dopo
-    access_token = response.data.access_token;
-    client_id = igdb_client_id;
-
-    credentials = { 
+    let credentials = { 
       clientID: igdb_client_id, 
       accessToken: response.data.access_token };
 
