@@ -5,6 +5,7 @@
 ### In Progress
 
 - [ ] compilare readme.md
+- [ ] mergiare tutto ed eliminare i branch vecchi
 
 ### Done ✓
 - [x] endpoint registrazione client e user
