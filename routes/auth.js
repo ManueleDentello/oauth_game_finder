@@ -232,12 +232,12 @@ router.get('/logout', async function (req, res, next) {
     } catch (error) {
       logger.error('Error revoking token: ', error.message);
     }
-  */
+    */
 
-  // delete all data in session and set a blank username
-  req.session.destroy();
-  userName = '';
-    res.render('message', { title: 'Logout', message: 'Logout effettuato correttamente', user: userName });
+    // delete all data in session and set a blank username
+    req.session.destroy();
+    userName = '';
+      res.render('message', { title: 'Logout', message: 'Logout effettuato correttamente', user: userName });
   }
 });
 
