@@ -12,6 +12,7 @@ const oauthServer = process.env.OAUTH_HOST;
 const EXPIRATION_WINDOW_IN_SECONDS = 300;
 const REFRESH_TOKEN_GRANT_TYPE = 'refresh_token';
 
+// configuration structure required by OAuth Client library
 const config = new AuthorizationCode({
   client: {
     id: process.env.OAUTH_CLIENT_ID,
@@ -24,10 +25,10 @@ const config = new AuthorizationCode({
   },
 });
 
-/*
-* Client registration: server reroutes the request to OAuth server in order to get the form
-* no need to do it every time the app starts (values remain the same)
-*/
+/*  LEGACY CODE (now it is done directly via the server)
+ *  Client registration: server reroutes the request to OAuth server in order to get the form
+ *  no need to do it every time the app starts (values remain the same)
+ */
 router.get('/client/register', async function (req, res, next) {
   try {
     // Axios instance with special header that permits self signed certificates
@@ -47,9 +48,10 @@ router.get('/client/register', async function (req, res, next) {
 });
 
 /*
-* Client registration: intercepts compiled form and send data to OAuth server
-* no need to do it every time the app starts (values remain the same)
-*/
+ *  LEGACY CODE (now it is done directly via the server)
+ *  Client registration: intercepts compiled form and send data to OAuth server
+ *  no need to do it every time the app starts (values remain the same)
+ */
 router.post('/client/register', async function (req, res, next) {
   try {
     user = req.session.userName;
@@ -68,8 +70,9 @@ router.post('/client/register', async function (req, res, next) {
 });
 
 /*
-* User registration: server reroutes the request to OAuth server in order to get the form
-*/
+ * LEGACY CODE (now it is done directly via the server)
+ * User registration: server reroutes the request to OAuth server in order to get the form
+ */
 router.get('/user/register', async function (req, res, next) {
   try {
     // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
@@ -88,11 +91,11 @@ router.get('/user/register', async function (req, res, next) {
 });
 
 /*
-* User registration: intercepts compiled form and send data to OAuth server
-*/
+ *  LEGACY CODE (now it is done directly via the server)
+ *  User registration: intercepts compiled form and send data to OAuth server
+ */
 router.post('/user/register', async function (req, res, next) {
   try {
-
     console.log(req.body);
 
     // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
@@ -116,8 +119,8 @@ router.post('/user/register', async function (req, res, next) {
 });
 
 /*
-* request authorization code to oauth server
-*/
+ *  request authorization code to oauth server
+ */
 router.get('/login', async(req, res) => {
   const authorizationUri = config.authorizeURL({
     redirect_uri: callbackUrl, 
@@ -125,15 +128,18 @@ router.get('/login', async(req, res) => {
     state: crypto.randomBytes(5).toString('hex'),
   });
 
+  logger.info('Redirecting to OAuth Server for the login and authcode obtainment');
   res.redirect(authorizationUri);
 })
 
 /*
-* get the authorization code back, request token to oauth server and store it
-*/
+ *  get the authorization code back, request token to oauth server and store it
+ */
 router.get('/callback', async (req, res) => {
-  const { code } = req.query; // create a variable that stores the value of "code" query parameter
-  //console.log('Quello che c\'è in req: \n' + req.body);
+  // get the "code" parameter from req.query
+  const { code } = req.query;
+  logger.info('Authorization code obtained: ' + code);
+
   const options = {
     code,
     redirect_uri: callbackUrl
@@ -141,14 +147,12 @@ router.get('/callback', async (req, res) => {
 
   try {
     const accessToken = await config.getToken(options);
-    logger.info('Contenuto del token: ' + JSON.stringify(accessToken));
 
-    // Save the entire token in the session. Attention: the data is the accessToken.token object
+    // Save the entire token (not only the access token) in the session
     req.session.oauth_token = accessToken.token;
+    logger.info('Token received: ' + req.session.oauth_token.access_token);
 
-    logger.info('Token: ' + req.session.oauth_token.access_token);
-
-    // Mando utente verso redirect per prendere lo username
+    // redirect to the secure endpoint on oauth server
     res.redirect('/username');
 
   } catch (error) {
@@ -159,25 +163,23 @@ router.get('/callback', async (req, res) => {
 
 router.get('/username', async (req, res) => {
   try {
-    // Creazione di un'istanza Axios con l'agente HTTPS personalizzato
+    // set header for allowing self-signed certificates
     const agent = new https.Agent({
-      rejectUnauthorized: false, // Consente certificati autofirmati
+      rejectUnauthorized: false, 
     });
 
-    logger.info('access_token ', req.session.oauth_token.access_token);
-
+    // include access token in the header in order to get the protected resource
     const headers = {
       'Authorization': 'Bearer ' + req.session.oauth_token.access_token
     };
 
-    // Effettua la chiamata al server su localhost:443
     const response = await axios.get(oauthServer + '/oauth/username', { headers: headers }, { httpsAgent: agent });
 
-    // Salvo lo username nella sessione corrente
+    // save username in the session
     req.session.userName = response.data;
-    logger.info('Utente loggato: ' + req.session.userName);
+    logger.info('User logged in: ' + req.session.userName);
 
-    // Mando l'utente nella home - fine autenticazione
+    // redirect to home page
     res.redirect('/');
   } catch (error) {
     logger.error('Errore durante la chiamata GET al server per l\'accesso alla risorsa protetta (username):', error);
@@ -189,10 +191,11 @@ router.get('/username', async (req, res) => {
 * request a new token to oauth server when the old one expires
 */
 router.get('/refresh-token', async (req, res) => {
-  let accessToken = await config.createToken(req.session.oauth_token);
   let userName = req.session.userName;
-    
-  //if(accessToken.expired(EXPIRATION_WINDOW_IN_SECONDS)) {
+
+  //  recreate access token instance to have access to the client's methods
+  let accessToken = await config.createToken(req.session.oauth_token);
+  
     try {
       const refreshParams = {
         refresh_token: req.session.oauth_token.refresh_token,
@@ -202,21 +205,21 @@ router.get('/refresh-token', async (req, res) => {
 
       const result = await accessToken.refresh(refreshParams);
       
-      // Save internally all info coming from the OAuth server
+      // update the entire token in the session
       req.session.oauth_token = result.token;
+      logger.info('Token refreshed: ', req.session.oauth_token);
 
-      logger.info('Token refreshed value: ', req.session.oauth_token);
-      res.render('message', { title: 'Flow OAuth', message: 'Token refreshato', user: userName });
+      res.render('message', { title: 'Flow OAuth', message: 'Token aggiornato', user: userName });
     } catch (error) {
-      console.error('Error refreshing access token:', error.output);
+      logger.error('Error refreshing access token:', error.output);
       res.status(500).send('Error refreshing access token');
     }
-  //}
 });
 
 router.get('/logout', async function (req, res, next) {
   let userName = req.session.userName;
 
+  // if someone tries to access this endpoint w/o being logged, a warning screen is shown
   if(!req.session.oauth_token){
     res.render('message', { title: 'Logout', message: 'Devi essere loggato per effettuare il logout', user: userName });
   } else {
@@ -224,9 +227,9 @@ router.get('/logout', async function (req, res, next) {
     let accessToken = await config.createToken(req.session.oauth_token);
     try {
       await accessToken.revokeAll();
-      logger.info('Access token and refresh token deleted');
+      logger.info('Access token and refresh token revoked');
     } catch (error) {
-      logger.error('Error revoking token: ', error.message);
+      //logger.error('Error revoking token: ', error.message);
   }
 
   // delete all data in session and set a blank username
@@ -236,6 +239,7 @@ router.get('/logout', async function (req, res, next) {
   }
 });
 
+// a dev endpoint to show the content of the session
 router.get('/userinfo', (req, res) => {
   res.send(req.session);
 });
