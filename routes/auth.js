@@ -162,29 +162,37 @@ router.get('/callback', async (req, res) => {
 });
 
 router.get('/username', async (req, res) => {
-  try {
-    // set header for allowing self-signed certificates
-    const agent = new https.Agent({
-      rejectUnauthorized: false, 
-    });
-
-    // include access token in the header in order to get the protected resource
-    const headers = {
-      'Authorization': 'Bearer ' + req.session.oauth_token.access_token
-    };
-
-    const response = await axios.get(oauthServer + '/oauth/username', { headers: headers }, { httpsAgent: agent });
-
-    // save username in the session
-    req.session.userName = response.data;
-    logger.info('User logged in: ' + req.session.userName);
-
-    // redirect to home page
-    res.redirect('/');
-  } catch (error) {
-    logger.error('Errore durante la chiamata GET al server per l\'accesso alla risorsa protetta (username):', error);
-    res.status(500).send('Errore durante la chiamata al server oauth2');
+  if (!req.session.oauth_token) {
+    logger.error('Tentativo di accesso a endpoint sicuro senza autenticazione');
+    res.status(401).send('You must be authenticated to access this URL');
   }
+  else
+  {
+    try {
+      // set header for allowing self-signed certificates
+      const agent = new https.Agent({
+        rejectUnauthorized: false, 
+      });
+  
+      // include access token in the header in order to get the protected resource
+      const headers = {
+        'Authorization': 'Bearer ' + req.session.oauth_token.access_token
+      };
+  
+      const response = await axios.get(oauthServer + '/oauth/username', { headers: headers }, { httpsAgent: agent });
+  
+      // save username in the session
+      req.session.userName = response.data;
+      logger.info('User logged in: ' + req.session.userName);
+  
+      // redirect to home page
+      res.redirect('/');
+    } catch (error) {
+      logger.error('Errore durante la chiamata GET al server per l\'accesso alla risorsa protetta (username):', error);
+      res.status(500).send('Errore durante la chiamata al server oauth2');
+    }
+  }
+  
 });
 
 /*
